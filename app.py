@@ -7,6 +7,8 @@ import importlib.util
 import pkgutil
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import socket
+from urllib.parse import urlparse, urlunparse
 from werkzeug.utils import secure_filename
 from flask import Flask, request, redirect, url_for, send_from_directory, render_template, jsonify, send_file
 import ssl as _ssl
@@ -56,6 +58,35 @@ def allowed_file(filename: str) -> bool:
 def index():
     """Basic page with a small upload form for Phase 1"""
     return render_template('index.html')
+
+
+def _detect_lan_ip():
+    """Try to determine the primary LAN IPv4 address for this host.
+    Returns a string IPv4 address (or '127.0.0.1' on failure).
+    """
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # doesn't need to be reachable; used to pick the outbound interface
+        s.connect(('8.8.8.8', 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return '127.0.0.1'
+
+
+@app.route('/info', methods=['GET'])
+def info():
+    """Return JSON with connection URLs (host_url and lan_url) for device discovery/UI."""
+    host_url = request.host_url  # includes scheme and trailing slash
+    lan_ip = _detect_lan_ip()
+    parsed = urlparse(host_url)
+    # build lan_url by replacing the netloc host with lan_ip (keep port if present)
+    netloc = lan_ip
+    if parsed.port:
+        netloc = f"{lan_ip}:{parsed.port}"
+    lan_url = urlunparse((parsed.scheme, netloc, parsed.path, parsed.params, parsed.query, parsed.fragment))
+    return jsonify({'host_url': host_url, 'lan_url': lan_url, 'lan_ip': lan_ip})
 
 @app.route('/upload', methods=['POST'])
 def upload_file():

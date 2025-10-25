@@ -128,6 +128,11 @@
           link. Files auto-expire after a short time.
         </p>
 
+        <div id="server-info" class="meta" style="margin-top: 12px">
+          <strong>Server addresses:</strong>
+          <div id="server-urls" style="margin-top: 8px"></div>
+        </div>
+
         <label class="uploader" id="dropzone">
           <input
             id="file-input"
@@ -199,6 +204,55 @@
       const qrArea = document.getElementById("qr-area");
       const showServerQr = document.getElementById("show-server-qr");
       const selectedName = document.getElementById("selected-name");
+      const serverUrls = document.getElementById("server-urls");
+
+      // fetch server connection info (host_url and lan_url)
+      fetch("/info")
+        .then((r) => r.json())
+        .then((info) => {
+          serverUrls.innerHTML = "";
+          const makeRow = (label, url) => {
+            const row = document.createElement("div");
+            row.style.display = "flex";
+            row.style.gap = "8px";
+            row.style.alignItems = "center";
+            const a = document.createElement("a");
+            a.href = url;
+            a.textContent = url;
+            a.className = "link";
+            a.target = "_blank";
+            const copyBtn = document.createElement("button");
+            copyBtn.textContent = "Copy";
+            copyBtn.className = "btn";
+            copyBtn.style.padding = "6px 8px";
+            copyBtn.addEventListener("click", () =>
+              navigator.clipboard.writeText(url)
+            );
+            const qrBtn = document.createElement("button");
+            qrBtn.textContent = "QR";
+            qrBtn.className = "btn ghost";
+            qrBtn.style.padding = "6px 8px";
+            qrBtn.addEventListener("click", () => {
+              qrImg.src = "/qr?url=" + encodeURIComponent(url);
+              qrArea.style.display = "block";
+            });
+            const lbl = document.createElement("div");
+            lbl.style.minWidth = "90px";
+            lbl.textContent = label + ":";
+            row.appendChild(lbl);
+            row.appendChild(a);
+            row.appendChild(copyBtn);
+            row.appendChild(qrBtn);
+            return row;
+          };
+          // host_url (may be localhost or external)
+          serverUrls.appendChild(makeRow("Host", info.host_url));
+          // LAN URL for other devices on same network
+          serverUrls.appendChild(makeRow("LAN", info.lan_url));
+        })
+        .catch(() => {
+          serverUrls.textContent = "Unable to fetch server info.";
+        });
 
       // keep selected file reference (drag-drop can't reliably set input.files)
       let selectedFile = null;
