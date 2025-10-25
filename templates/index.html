@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WifiX — Upload</title>
+    <style>
+      :root {
+        --bg: #f3f4f6;
+        --card: #ffffff;
+        --accent: #6366f1;
+        --muted: #6b7280;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
+        background: var(--bg);
+        color: #111827;
+      }
+      .container {
+        max-width: 880px;
+        margin: 40px auto;
+        padding: 24px;
+      }
+      .card {
+        background: var(--card);
+        border-radius: 12px;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+        padding: 28px;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 1.5rem;
+      }
+      p.lead {
+        margin: 0 0 16px;
+        color: var(--muted);
+      }
+      .uploader {
+        border: 2px dashed rgba(99, 102, 241, 0.14);
+        border-radius: 10px;
+        padding: 28px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .uploader.drag {
+        background: linear-gradient(
+          90deg,
+          rgba(99, 102, 241, 0.04),
+          rgba(99, 102, 241, 0.01)
+        );
+        border-color: rgba(99, 102, 241, 0.35);
+      }
+      .uploader input[type="file"] {
+        display: none;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+      }
+      .btn.primary {
+        background: linear-gradient(90deg, var(--accent), #8b5cf6);
+        color: white;
+        box-shadow: 0 6px 14px rgba(99, 102, 241, 0.18);
+      }
+      .btn.ghost {
+        background: transparent;
+        border: 1px solid #e6e8f0;
+        color: #111827;
+      }
+      .row {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 16px;
+      }
+      .progress {
+        height: 10px;
+        background: #eef2ff;
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      .progress > i {
+        display: block;
+        height: 100%;
+        width: 0;
+        background: linear-gradient(90deg, #60a5fa, #8b5cf6);
+      }
+      .meta {
+        margin-top: 14px;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .qr {
+        margin-top: 12px;
+      }
+      a.link {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      footer {
+        margin-top: 18px;
+        color: var(--muted);
+        font-size: 0.85rem;
+      }
+      @media (max-width: 600px) {
+        .container {
+          margin: 18px 12px;
+          padding: 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <h1>WifiX — Share files on your LAN</h1>
+        <p class="lead">
+          Quickly upload files from any device and share a temporary download
+          link. Files auto-expire after a short time.
+        </p>
+
+        <label class="uploader" id="dropzone">
+          <input
+            id="file-input"
+            type="file"
+            name="file"
+            aria-label="Choose file to upload"
+          />
+          <div>
+            <strong id="dz-text">Click or drop a file here to upload</strong>
+            <div class="meta">
+              Supported: any file (configurable). Max: server limit.
+            </div>
+          </div>
+        </label>
+        <div id="selected-name" class="meta" style="margin-top: 8px">
+          No file selected
+        </div>
+
+        <div class="row">
+          <button id="upload-btn" class="btn primary">Upload</button>
+          <button id="show-server-qr" class="btn ghost">Show Server QR</button>
+          <a
+            id="download-link"
+            class="btn"
+            style="display: none"
+            target="_blank"
+            >Open</a
+          >
+        </div>
+
+        <div class="meta" id="status" style="margin-top: 12px">
+          No uploads yet.
+        </div>
+
+        <div style="margin-top: 12px; display: none" id="progress-wrap">
+          <div class="progress"><i id="progress-bar"></i></div>
+          <div class="meta" id="progress-text">0%</div>
+        </div>
+
+        <div class="qr" id="qr-area" style="display: none">
+          <img
+            id="qr-img"
+            alt="QR code"
+            style="
+              max-width: 240px;
+              border-radius: 8px;
+              border: 1px solid #eef2ff;
+            "
+          />
+        </div>
+
+        <footer>
+          Tip: Scan the QR to open the link on a phone. Use the server QR to
+          connect other devices to this host.
+        </footer>
+      </div>
+    </div>
+
+    <script>
+      const dropzone = document.getElementById("dropzone");
+      const input = document.getElementById("file-input");
+      const uploadBtn = document.getElementById("upload-btn");
+      const status = document.getElementById("status");
+      const progressWrap = document.getElementById("progress-wrap");
+      const progressBar = document.getElementById("progress-bar");
+      const progressText = document.getElementById("progress-text");
+      const downloadLink = document.getElementById("download-link");
+      const qrImg = document.getElementById("qr-img");
+      const qrArea = document.getElementById("qr-area");
+      const showServerQr = document.getElementById("show-server-qr");
+      const selectedName = document.getElementById("selected-name");
+
+      // keep selected file reference (drag-drop can't reliably set input.files)
+      let selectedFile = null;
+
+      function setSelected(file) {
+        selectedFile = file || null;
+        if (selectedFile) {
+          selectedName.textContent =
+            selectedFile.name +
+            " (" +
+            Math.round(selectedFile.size / 1024) +
+            " KB)";
+        } else {
+          selectedName.textContent = "No file selected";
+        }
+      }
+
+      // Drag & drop UI
+      ["dragenter", "dragover"].forEach((e) => {
+        dropzone.addEventListener(e, (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          dropzone.classList.add("drag");
+          document.getElementById("dz-text").textContent =
+            "Drop file to upload";
+        });
+      });
+      ["dragleave", "drop"].forEach((e) => {
+        dropzone.addEventListener(e, (ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          dropzone.classList.remove("drag");
+          document.getElementById("dz-text").textContent =
+            "Click or drop a file here to upload";
+        });
+      });
+      dropzone.addEventListener("drop", (ev) => {
+        const f =
+          ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0];
+        if (f) {
+          // store selected file (can't reliably programmatically set input.files)
+          setSelected(f);
+        }
+      });
+      // label already triggers the file input on click; avoid calling input.click()
+      // to prevent the file picker appearing twice. Add keyboard support instead.
+      dropzone.setAttribute("tabindex", "0");
+      dropzone.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter" || ev.key === " ") {
+          ev.preventDefault();
+          input.click();
+        }
+      });
+
+      // when user picks file via native picker
+      input.addEventListener("change", (ev) => {
+        const f = input.files && input.files[0];
+        setSelected(f);
+      });
+
+      uploadBtn.addEventListener("click", () => {
+        const file = selectedFile || (input.files && input.files[0]);
+        if (!file) {
+          status.textContent = "Please select a file first.";
+          return;
+        }
+        status.textContent = `Uploading ${file.name}...`;
+        progressWrap.style.display = "block";
+        progressBar.style.width = "0%";
+        progressText.textContent = "0%";
+        uploadBtn.disabled = true;
+
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", "/upload", true);
+        xhr.upload.onprogress = function (e) {
+          if (e.lengthComputable) {
+            const pct = Math.round((e.loaded / e.total) * 100);
+            progressBar.style.width = pct + "%";
+            progressText.textContent = pct + "%";
+          }
+        };
+        xhr.onload = function () {
+          progressBar.style.width = "100%";
+          progressText.textContent = "Done";
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const json = JSON.parse(xhr.responseText);
+              const url = json.url || json.data?.url || null;
+              if (url) {
+                status.innerHTML = `Uploaded: <a class=\"link\" href=\"${url}\" target=\"_blank\">${url}</a>`;
+                downloadLink.href = url;
+                downloadLink.style.display = "inline-flex";
+                downloadLink.textContent = "Open Download";
+                // show QR for the download link
+                qrImg.src = "/qr?url=" + encodeURIComponent(url);
+                qrArea.style.display = "block";
+              } else {
+                status.textContent = "Upload succeeded but no URL returned.";
+              }
+            } catch (err) {
+              status.textContent =
+                "Upload completed but failed to parse server response.";
+            }
+          } else {
+            status.textContent = "Upload failed: " + xhr.statusText;
+          }
+        };
+        xhr.onerror = function () {
+          status.textContent = "Upload error.";
+        };
+        xhr.onloadend = function () {
+          uploadBtn.disabled = false;
+        };
+        const fd = new FormData();
+        fd.append("file", file);
+        xhr.send(fd);
+      });
+
+      showServerQr.addEventListener("click", () => {
+        qrImg.src = "/qr";
+        qrArea.style.display = "block";
+        status.textContent = "Server QR shown below.";
+      });
+    </script>
+  </body>
+</html>
