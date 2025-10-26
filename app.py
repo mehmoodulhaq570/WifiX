@@ -52,6 +52,79 @@ app.secret_key = os.environ.get('SECRET_KEY') or os.urandom(24)
 
 socketio = SocketIO(app, async_mode='threading')
 
+# Runtime state: which connected socket is the current "host" (UI that started the server)
+HOST_SID = None
+
+
+@socketio.on('become_host')
+def handle_become_host(data):
+    """Mark the calling socket as the host that can approve incoming connection requests."""
+    global HOST_SID
+    HOST_SID = request.sid
+    try:
+        socketio.emit('host_status', {'available': True}, to=HOST_SID)
+    except Exception:
+        pass
+
+
+@socketio.on('request_connect')
+def handle_request_connect(data):
+    """A client requests to connect to the host. Forward this to the host if present.
+    Payload can include a display name: { name: 'Alice' }
+    """
+    global HOST_SID
+    payload = {'sid': request.sid, 'name': data.get('name') if isinstance(data, dict) else None}
+    if HOST_SID:
+        try:
+            socketio.emit('incoming_request', payload, to=HOST_SID)
+        except Exception:
+            pass
+    else:
+        # no host: notify requester immediately
+        try:
+            socketio.emit('request_denied', {'reason': 'no_host'}, to=request.sid)
+        except Exception:
+            pass
+
+
+@socketio.on('approve_request')
+def handle_approve_request(data):
+    """Host approves a request. Expects { sid: '<requester-sid>' }"""
+    target = None
+    if isinstance(data, dict):
+        target = data.get('sid')
+    if target:
+        try:
+            socketio.emit('request_approved', {'by': request.sid}, to=target)
+        except Exception:
+            pass
+
+
+@socketio.on('deny_request')
+def handle_deny_request(data):
+    target = None
+    if isinstance(data, dict):
+        target = data.get('sid')
+    if target:
+        try:
+            socketio.emit('request_denied', {'by': request.sid}, to=target)
+        except Exception:
+            pass
+
+
+@socketio.on('disconnect')
+def _on_disconnect():
+    """Cleanup host SID if the host disconnects."""
+    global HOST_SID
+    sid = request.sid
+    if HOST_SID == sid:
+        HOST_SID = None
+        # broadcast to clients that host is gone
+        try:
+            socketio.emit('host_status', {'available': False})
+        except Exception:
+            pass
+
 def allowed_file(filename: str) -> bool:
     if ALLOWED_EXTENSIONS is None:
         return True
