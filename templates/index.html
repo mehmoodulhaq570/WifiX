@@ -280,10 +280,12 @@
             row.appendChild(qrBtn);
             return row;
           };
-          // host_url (may be localhost or external)
-          serverUrls.appendChild(makeRow("Host", info.host_url));
-          // LAN URL for other devices on same network
-          serverUrls.appendChild(makeRow("LAN", info.lan_url));
+          // Show a single shareable address to avoid duplicate QR buttons.
+          // Prefer the LAN URL when it appears to be a non-loopback address,
+          // otherwise fall back to the host_url.
+          const isLoopback = (info.lan_ip === '127.0.0.1' || info.lan_ip === undefined || info.lan_ip === null);
+          const shareUrl = !isLoopback && info.lan_url ? info.lan_url : info.host_url;
+          serverUrls.appendChild(makeRow('Shareable', shareUrl));
         })
         .catch(() => {
           serverUrls.textContent = "Unable to fetch server info.";
@@ -494,11 +496,11 @@
             // If this client is not acting as host, auto-request connection when opening the host IP
             if (!window.becameHost && !window._autoRequested) {
               try {
-                socket.emit('request_connect', { name: null });
+                socket.emit("request_connect", { name: null });
                 window._autoRequested = true;
-                status.textContent = 'Requesting connection to host...';
+                status.textContent = "Requesting connection to host...";
               } catch (e) {
-                console.warn('auto request failed', e);
+                console.warn("auto request failed", e);
               }
             }
           });
@@ -506,34 +508,72 @@
           socket.on("file_uploaded", (data) => {
             const wrap = document.getElementById("files-list");
             if (wrap && typeof data.url !== "undefined") {
-              const node = renderFileItem({ filename: data.filename, url: data.url, mtime: Date.now() / 1000 });
+              const node = renderFileItem({
+                filename: data.filename,
+                url: data.url,
+                mtime: Date.now() / 1000,
+              });
               if (wrap.firstChild) wrap.insertBefore(node, wrap.firstChild);
               else wrap.appendChild(node);
             }
           });
 
           // Requests approved/denied for this client
-          socket.on('request_approved', (d) => { status.textContent = 'Connected to host.'; });
-          socket.on('request_denied', (d) => { status.textContent = 'Connection denied by host.'; });
-          socket.on('host_status', (st) => { if (st && st.available === false) { status.textContent = 'Host is not available.'; } });
-
-          // incoming_request may be received by any socket but we only show it when we're the host
-          socket.on('incoming_request', (data) => {
-            if (!window.becameHost) return; // ignore unless host
-            const name = data.name || 'Guest';
-            const sid = data.sid;
-            const box = document.createElement('div');
-            box.style.position='fixed'; box.style.right='18px'; box.style.top='18px'; box.style.background='white'; box.style.padding='12px'; box.style.borderRadius='8px'; box.style.boxShadow='0 6px 18px rgba(0,0,0,0.12)'; box.style.zIndex=9999;
-            box.innerHTML = `<div><strong>Connection request</strong></div><div style='margin-top:8px'>${name} wants to connect.</div>`;
-            const allow = document.createElement('button'); allow.className='btn primary'; allow.textContent='Allow'; allow.style.marginLeft='8px';
-            const deny = document.createElement('button'); deny.className='btn ghost'; deny.textContent='Deny'; deny.style.marginLeft='8px';
-            const controls = document.createElement('div'); controls.style.marginTop='8px'; controls.appendChild(allow); controls.appendChild(deny);
-            box.appendChild(controls); document.body.appendChild(box);
-            allow.addEventListener('click', ()=>{ socket.emit('approve_request', {sid}); box.remove(); status.textContent = `${name} approved.`; });
-            deny.addEventListener('click', ()=>{ socket.emit('deny_request', {sid}); box.remove(); status.textContent = `${name} denied.`; });
+          socket.on("request_approved", (d) => {
+            status.textContent = "Connected to host.";
+          });
+          socket.on("request_denied", (d) => {
+            status.textContent = "Connection denied by host.";
+          });
+          socket.on("host_status", (st) => {
+            if (st && st.available === false) {
+              status.textContent = "Host is not available.";
+            }
           });
 
-        } catch (e) { console.warn('socket init failed', e); }
+          // incoming_request may be received by any socket but we only show it when we're the host
+          socket.on("incoming_request", (data) => {
+            if (!window.becameHost) return; // ignore unless host
+            const name = data.name || "Guest";
+            const sid = data.sid;
+            const box = document.createElement("div");
+            box.style.position = "fixed";
+            box.style.right = "18px";
+            box.style.top = "18px";
+            box.style.background = "white";
+            box.style.padding = "12px";
+            box.style.borderRadius = "8px";
+            box.style.boxShadow = "0 6px 18px rgba(0,0,0,0.12)";
+            box.style.zIndex = 9999;
+            box.innerHTML = `<div><strong>Connection request</strong></div><div style='margin-top:8px'>${name} wants to connect.</div>`;
+            const allow = document.createElement("button");
+            allow.className = "btn primary";
+            allow.textContent = "Allow";
+            allow.style.marginLeft = "8px";
+            const deny = document.createElement("button");
+            deny.className = "btn ghost";
+            deny.textContent = "Deny";
+            deny.style.marginLeft = "8px";
+            const controls = document.createElement("div");
+            controls.style.marginTop = "8px";
+            controls.appendChild(allow);
+            controls.appendChild(deny);
+            box.appendChild(controls);
+            document.body.appendChild(box);
+            allow.addEventListener("click", () => {
+              socket.emit("approve_request", { sid });
+              box.remove();
+              status.textContent = `${name} approved.`;
+            });
+            deny.addEventListener("click", () => {
+              socket.emit("deny_request", { sid });
+              box.remove();
+              status.textContent = `${name} denied.`;
+            });
+          });
+        } catch (e) {
+          console.warn("socket init failed", e);
+        }
       }
 
       // PIN flow: check status and show modal if required
@@ -623,11 +663,25 @@
             setTimeout(() => connectBtn.click(), 200);
             return;
           }
+          // prevent duplicate requests: if an auto-request already fired, don't send again
+          if (window._autoRequested) {
+            status.textContent =
+              "Connection request already sent. Waiting for host approval...";
+            connectBtn.disabled = true;
+            return;
+          }
           const sock = window.sock || io();
           window.sock = sock;
-          const displayName = prompt("Name to show to host (optional)") || "Guest";
-          sock.emit("request_connect", { name: displayName });
-          status.textContent = "Connection request sent. Waiting for host approval...";
+          const displayName =
+            prompt("Name to show to host (optional)") || "Guest";
+          try {
+            sock.emit("request_connect", { name: displayName });
+            window._autoRequested = true; // mark that a request was sent to avoid duplicates
+          } catch (e) {
+            console.warn("emit request_connect failed", e);
+          }
+          status.textContent =
+            "Connection request sent. Waiting for host approval...";
           connectBtn.disabled = true;
 
           // handlers are installed in initSocket; ensure socket is initialized
