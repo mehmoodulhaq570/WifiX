@@ -9,8 +9,9 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import socket
 from urllib.parse import urlparse, urlunparse
+import atexit
 from werkzeug.utils import secure_filename
-from flask import Flask, request, redirect, url_for, send_from_directory, render_template, jsonify, send_file
+from flask import Flask, request, redirect, url_for, send_from_directory, render_template, jsonify, send_file, session
 import ssl as _ssl
 
 # Backfill ssl.wrap_socket if missing (some stdlib shuffles in newer Pythons)
@@ -46,6 +47,8 @@ CLEANUP_INTERVAL_SECONDS = int(os.environ.get("CLEANUP_INTERVAL_SECONDS", 60))
 app = Flask(__name__, template_folder="templates")
 app.config["UPLOAD_FOLDER"] = str(UPLOAD_FOLDER)
 app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024 * 1024  # 1 GiB guard (adjust)
+# Session secret for optional PIN flow
+app.secret_key = os.environ.get('SECRET_KEY') or os.urandom(24)
 
 socketio = SocketIO(app, async_mode='threading')
 
@@ -88,9 +91,63 @@ def info():
     lan_url = urlunparse((parsed.scheme, netloc, parsed.path, parsed.params, parsed.query, parsed.fragment))
     return jsonify({'host_url': host_url, 'lan_url': lan_url, 'lan_ip': lan_ip})
 
+
+@app.route('/files', methods=['GET'])
+def list_files():
+    """Return list of available uploaded files as JSON.
+    Each item: { filename, url, mtime }
+    """
+    # Enforce PIN if enabled: listing requires auth to see files in the UI
+    if PIN_ENABLED and not session.get('authed'):
+        return jsonify({'error': 'unauthorized'}), 401
+
+    uploads = Path(app.config['UPLOAD_FOLDER'])
+    items = []
+    for p in uploads.iterdir():
+        if p.is_file():
+            items.append({
+                'filename': p.name,
+                'url': url_for('download_file', filename=p.name, _external=True),
+                'mtime': p.stat().st_mtime,
+            })
+    # sort newest first
+    items.sort(key=lambda x: x['mtime'], reverse=True)
+    return jsonify(items)
+
+
+# Simple PIN-based access control (optional)
+PIN_ENABLED = os.environ.get('ACCESS_PIN') is not None
+PIN_VALUE = os.environ.get('ACCESS_PIN')
+
+
+@app.route('/auth/status', methods=['GET'])
+def auth_status():
+    return jsonify({'pin_required': PIN_ENABLED, 'authed': bool(session.get('authed'))})
+
+
+@app.route('/auth', methods=['POST'])
+def auth():
+    if not PIN_ENABLED:
+        return jsonify({'ok': True, 'authed': True})
+    data = request.get_json() or {}
+    pin = data.get('pin')
+    if pin and PIN_VALUE and pin == PIN_VALUE:
+        session['authed'] = True
+        return jsonify({'ok': True, 'authed': True})
+    return jsonify({'ok': False, 'authed': False}), 401
+
+
+@app.route('/auth/logout', methods=['POST'])
+def auth_logout():
+    session.pop('authed', None)
+    return jsonify({'ok': True})
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     # expects form field named 'file'
+    # enforce auth when PIN is enabled
+    if PIN_ENABLED and not session.get('authed'):
+        return jsonify({'error': 'unauthorized'}), 401
     if 'file' not in request.files:
         return jsonify({'error': 'no file part'}), 400
     f = request.files['file']
@@ -105,7 +162,7 @@ def upload_file():
         download_url = url_for('download_file', filename=saved_name, _external=True)
         # notify via socketio (if clients connected)
         try:
-            socketio.emit('file_uploaded', {'filename': saved_name, 'url': download_url})
+            socketio.emit('file_uploaded', {'filename': saved_name, 'url': download_url}, broadcast=True)
         except Exception:
             pass
         return jsonify({'filename': saved_name, 'url': download_url}), 201
@@ -162,4 +219,40 @@ if __name__ == '__main__':
     # run with socketio so real-time features can be added later
     # eventlet is recommended for production/local LAN tests
     # allow_unsafe_werkzeug=True is intentional for local development/testing
+
+    # Optionally advertise via Zeroconf/mDNS on the LAN for auto-discovery
+    zeroconf = None
+    info = None
+    if os.environ.get('ENABLE_ZEROCONF', '1') == '1':
+        try:
+            from zeroconf import ServiceInfo, Zeroconf
+            lan_ip = _detect_lan_ip()
+            svc_name = f"WifiX on {lan_ip}._wifi-share._tcp.local."  # visible name in mDNS browsers
+            # simple text record
+            desc = {'path': '/'}
+            info = ServiceInfo(
+                "_wifi-share._tcp.local.",
+                svc_name,
+                addresses=[socket.inet_aton(lan_ip)],
+                port=int(os.environ.get('PORT', 5000)),
+                properties=desc,
+                server=(socket.gethostname() + '.local.')
+            )
+            zeroconf = Zeroconf()
+            zeroconf.register_service(info)
+            print(f"Zeroconf: registered service {svc_name}")
+        except Exception as e:
+            print("Zeroconf registration failed:", e)
+
+    def _cleanup_zeroconf():
+        try:
+            if zeroconf and info:
+                zeroconf.unregister_service(info)
+                zeroconf.close()
+                print('Zeroconf: service unregistered')
+        except Exception:
+            pass
+
+    atexit.register(_cleanup_zeroconf)
+
     socketio.run(app, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)

@@ -133,6 +133,13 @@
           <div id="server-urls" style="margin-top: 8px"></div>
         </div>
 
+        <div id="shared-files" style="margin-top: 16px">
+          <strong>Shared files</strong>
+          <div id="files-list" class="meta" style="margin-top: 8px">
+            Loading…
+          </div>
+        </div>
+
         <label class="uploader" id="dropzone">
           <input
             id="file-input"
@@ -192,6 +199,28 @@
     </div>
 
     <script>
+      // Socket.IO client (load via CDN)
+      (function () {
+        const s = document.createElement("script");
+        s.src = "https://cdn.socket.io/4.7.2/socket.io.min.js";
+        s.defer = true;
+        document.head.appendChild(s);
+      })();
+
+      // PIN modal (hidden by default)
+      const pinModalHtml = `
+        <div id="pin-modal" style="position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;z-index:9999;">
+          <div style="background:white;padding:20px;border-radius:8px;max-width:420px;width:90%;box-shadow:0 6px 20px rgba(0,0,0,0.2);">
+            <h3 style="margin-top:0">Enter access PIN</h3>
+            <p class="meta">This server requires a PIN to join. Ask the host for the PIN.</p>
+            <input id="pin-input" type="password" aria-label="PIN" placeholder="PIN" style="width:100%;padding:8px;margin-top:8px;border-radius:6px;border:1px solid #e6e8f0" />
+            <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end;">
+              <button id="pin-submit" class="btn primary">Enter</button>
+            </div>
+            <div id="pin-error" style="color:#BE123C;margin-top:8px;display:none"></div>
+          </div>
+        </div>`;
+
       const dropzone = document.getElementById("dropzone");
       const input = document.getElementById("file-input");
       const uploadBtn = document.getElementById("upload-btn");
@@ -376,6 +405,146 @@
         qrArea.style.display = "block";
         status.textContent = "Server QR shown below.";
       });
+
+      // --- Shared files + realtime updates via Socket.IO ---
+      function renderFileItem(item) {
+        const row = document.createElement("div");
+        row.style.display = "flex";
+        row.style.gap = "8px";
+        row.style.alignItems = "center";
+        row.style.marginBottom = "8px";
+        const a = document.createElement("a");
+        a.href = item.url;
+        a.textContent = item.filename;
+        a.target = "_blank";
+        a.className = "link";
+        const copy = document.createElement("button");
+        copy.className = "btn";
+        copy.textContent = "Copy";
+        copy.style.padding = "6px 8px";
+        copy.addEventListener("click", () =>
+          navigator.clipboard.writeText(item.url)
+        );
+        const qrbtn = document.createElement("button");
+        qrbtn.className = "btn ghost";
+        qrbtn.textContent = "QR";
+        qrbtn.style.padding = "6px 8px";
+        qrbtn.addEventListener("click", () => {
+          qrImg.src = "/qr?url=" + encodeURIComponent(item.url);
+          qrArea.style.display = "block";
+        });
+        const when = document.createElement("div");
+        when.style.marginLeft = "auto";
+        when.style.color = "var(--muted)";
+        when.style.fontSize = "0.85rem";
+        try {
+          when.textContent = new Date(
+            (item.mtime || Date.now()) * 1000
+          ).toLocaleString();
+        } catch (e) {
+          when.textContent = "";
+        }
+        row.appendChild(a);
+        row.appendChild(copy);
+        row.appendChild(qrbtn);
+        row.appendChild(when);
+        return row;
+      }
+
+      function loadFiles() {
+        fetch("/files")
+          .then((r) => r.json())
+          .then((items) => {
+            const wrap = document.getElementById("files-list");
+            wrap.innerHTML = "";
+            if (!items || items.length === 0) {
+              wrap.textContent = "No files yet.";
+              return;
+            }
+            items.forEach((it) => wrap.appendChild(renderFileItem(it)));
+          })
+          .catch(() => {
+            document.getElementById("files-list").textContent =
+              "Failed to load files.";
+          });
+      }
+
+      // wait for socket.io script to load then connect
+      function initSocket() {
+        if (typeof io === "undefined") {
+          setTimeout(initSocket, 200);
+          return;
+        }
+        try {
+          const socket = io();
+          socket.on("connect", () => console.debug("socket connected"));
+          socket.on("file_uploaded", (data) => {
+            // data: { filename, url }
+            const wrap = document.getElementById("files-list");
+            if (wrap && typeof data.url !== "undefined") {
+              // prepend new item
+              const node = renderFileItem({
+                filename: data.filename,
+                url: data.url,
+                mtime: Date.now() / 1000,
+              });
+              if (wrap.firstChild) wrap.insertBefore(node, wrap.firstChild);
+              else wrap.appendChild(node);
+            }
+          });
+        } catch (e) {
+          console.warn("socket init failed", e);
+        }
+      }
+
+      // PIN flow: check status and show modal if required
+      function ensureAuthThenInit() {
+        fetch("/auth/status")
+          .then((r) => r.json())
+          .then((st) => {
+            if (st.pin_required && !st.authed) {
+              // show modal
+              const div = document.createElement("div");
+              div.innerHTML = pinModalHtml;
+              document.body.appendChild(div);
+              const submit = document.getElementById("pin-submit");
+              const pinInput = document.getElementById("pin-input");
+              const pinErr = document.getElementById("pin-error");
+              submit.addEventListener("click", () => {
+                const pin = pinInput.value || "";
+                fetch("/auth", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ pin }),
+                })
+                  .then((r) => {
+                    if (r.ok) return r.json();
+                    throw r;
+                  })
+                  .then((j) => {
+                    if (j.authed) {
+                      div.remove();
+                      loadFiles();
+                      initSocket();
+                    }
+                  })
+                  .catch(() => {
+                    pinErr.style.display = "block";
+                    pinErr.textContent = "Invalid PIN";
+                  });
+              });
+            } else {
+              loadFiles();
+              initSocket();
+            }
+          })
+          .catch(() => {
+            loadFiles();
+            initSocket();
+          });
+      }
+
+      ensureAuthThenInit();
     </script>
   </body>
 </html>
