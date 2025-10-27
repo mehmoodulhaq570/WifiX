@@ -12,6 +12,7 @@ from urllib.parse import urlparse, urlunparse
 import atexit
 from werkzeug.utils import secure_filename
 from flask import Flask, request, redirect, url_for, send_from_directory, render_template, jsonify, send_file, session
+from jinja2 import TemplateNotFound
 import ssl as _ssl
 
 # Backfill ssl.wrap_socket if missing (some stdlib shuffles in newer Pythons)
@@ -41,7 +42,9 @@ if not hasattr(pkgutil, 'get_loader'):
 UPLOAD_FOLDER = Path(__file__).parent / "uploads"
 UPLOAD_FOLDER.mkdir(exist_ok=True)
 ALLOWED_EXTENSIONS = None  # allow all for Phase 1; restrict later if needed
-FILE_TTL_SECONDS = int(os.environ.get("FILE_TTL_SECONDS", 600))  # default 10 minutes
+# By default keep uploaded files until user explicitly deletes them.
+# Set FILE_TTL_SECONDS in the environment to a positive integer to enable automatic cleanup.
+FILE_TTL_SECONDS = int(os.environ.get("FILE_TTL_SECONDS", 0))  # 0 = disabled by default
 CLEANUP_INTERVAL_SECONDS = int(os.environ.get("CLEANUP_INTERVAL_SECONDS", 60))
 
 app = Flask(__name__, template_folder="templates")
@@ -50,7 +53,9 @@ app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024 * 1024  # 1 GiB guard (adjust)
 # Session secret for optional PIN flow
 app.secret_key = os.environ.get('SECRET_KEY') or os.urandom(24)
 
-socketio = SocketIO(app, async_mode='threading')
+# Allow cross-origin Socket.IO connections from the frontend dev server (Vite)
+# In development we allow all origins; for production set this to a more restrictive list.
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 # Runtime state: which connected socket is the current "host" (UI that started the server)
 HOST_SID = None
@@ -125,6 +130,21 @@ def _on_disconnect():
         except Exception:
             pass
 
+
+@socketio.on('stop_host')
+def handle_stop_host(data):
+    """Host requests to stop being the host (from frontend). If the calling socket is the registered host,
+    clear HOST_SID and notify clients that host is no longer available.
+    """
+    global HOST_SID
+    sid = request.sid
+    if HOST_SID == sid:
+        HOST_SID = None
+        try:
+            socketio.emit('host_status', {'available': False})
+        except Exception:
+            pass
+
 def allowed_file(filename: str) -> bool:
     if ALLOWED_EXTENSIONS is None:
         return True
@@ -132,8 +152,27 @@ def allowed_file(filename: str) -> bool:
 
 @app.route('/')
 def index():
-    """Basic page with a small upload form for Phase 1"""
-    return render_template('index.html')
+    """Basic page with a small upload form for Phase 1.
+
+    If a Jinja `index.html` template is present in `templates/` this will render
+    it (legacy behavior). When using the React frontend during development the
+    template may not exist; in that case we fall back to one of:
+      1. Serve the built React app if `frontend/react/dist/index.html` exists.
+      2. Redirect to the Vite dev server at http://localhost:5173 (default).
+
+    This makes it easy to develop with the React frontend without a templates
+    folder while preserving the original template-based UI as an option.
+    """
+    try:
+        return render_template('index.html')
+    except TemplateNotFound:
+        # If frontend React build exists, serve it directly
+        built = Path(__file__).parent / 'frontend' / 'react' / 'dist' / 'index.html'
+        if built.exists():
+            return send_file(str(built))
+        # Otherwise redirect to the Vite dev server (adjust via env if needed)
+        vite_url = os.environ.get('VITE_DEV_SERVER', 'http://localhost:5173')
+        return redirect(vite_url)
 
 
 def _detect_lan_ip():
@@ -310,9 +349,10 @@ def cleanup_worker():
                 pass
         time.sleep(CLEANUP_INTERVAL_SECONDS)
 
-# start cleanup thread
-cleanup_thread = threading.Thread(target=cleanup_worker, daemon=True)
-cleanup_thread.start()
+# start cleanup thread only if FILE_TTL_SECONDS is enabled (> 0)
+if FILE_TTL_SECONDS and FILE_TTL_SECONDS > 0:
+    cleanup_thread = threading.Thread(target=cleanup_worker, daemon=True)
+    cleanup_thread.start()
 
 if __name__ == '__main__':
     # run with socketio so real-time features can be added later
