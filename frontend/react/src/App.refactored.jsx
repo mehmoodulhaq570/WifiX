@@ -9,9 +9,6 @@ import FileList from "./components/FileList";
 import DeleteModal from "./components/DeleteModal";
 import DarkModeToggle from "./components/DarkModeToggle";
 import Footer from "./components/Footer";
-import ConnectionApprovalModal from "./components/ConnectionApprovalModal";
-import ConnectionStatus from "./components/ConnectionStatus";
-import UploadErrorModal from "./components/UploadErrorModal";
 
 // Hooks
 import { useSocket } from "./hooks/useSocket";
@@ -37,10 +34,6 @@ function App() {
   const [qrVisible, setQrVisible] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [pendingRequest, setPendingRequest] = useState(null);
-  const [showApprovalModal, setShowApprovalModal] = useState(false);
-  const [uploadError, setUploadError] = useState(null);
-  const [showUploadError, setShowUploadError] = useState(false);
 
   // File upload hook
   const { uploadFile, uploadProgress, isUploading } = useFileUpload();
@@ -101,9 +94,11 @@ function App() {
         setStatusMsg("Connection denied by host.");
       },
       onIncomingRequest: (data) => {
-        // Show modal instead of browser confirm
-        setPendingRequest(data);
-        setShowApprovalModal(true);
+        const name = data?.name || "Guest";
+        const sid = data?.sid;
+        const ok = window.confirm(`${name} wants to connect. Allow?`);
+        if (ok) socketRef.current.emit("approve_request", { sid });
+        else socketRef.current.emit("deny_request", { sid });
       },
       onHostStatus: (st) => {
         if (st && st.available === false)
@@ -136,30 +131,28 @@ function App() {
     setStatusMsg("Hosting stopped");
   };
 
+  const handleConnectToHost = async () => {
+    const displayName =
+      window.prompt("Name to show to host (optional)") || "Guest";
+    const result = await socketConnectToHost(displayName);
+    if (result.success) {
+      setStatusMsg("Connection request sent. Waiting for host approval...");
+    } else {
+      setStatusMsg(result.message || "Connection failed");
+    }
+  };
 
   // Upload handler
   const handleUpload = async () => {
     const inputEl = fileInputRef.current;
     const file = inputEl && inputEl.files && inputEl.files[0];
     if (!file) {
-      setUploadError("Please select a file first.");
-      setShowUploadError(true);
+      setStatusMsg("Please select a file first.");
       return;
     }
-    
-    // Check file size (max 1GB)
-    const maxSize = 1024 * 1024 * 1024; // 1GB
-    if (file.size > maxSize) {
-      setUploadError("File size exceeds 1GB limit. Please choose a smaller file.");
-      setShowUploadError(true);
-      return;
-    }
-    
     setStatusMsg(`Uploading ${file.name}...`);
-    console.log('Starting upload for file:', file.name, 'Size:', file.size);
     try {
       const result = await uploadFile(file);
-      console.log('Upload result:', result);
       if (result.success) {
         setFiles((prev) => [
           {
@@ -173,18 +166,13 @@ function App() {
         ]);
         if (result.url) {
           setQrUrl(result.url);
-          setStatusMsg(`✓ Uploaded: ${result.filename}`);
+          setStatusMsg(`Uploaded: ${result.url}`);
         } else {
           setStatusMsg("Upload succeeded but no URL returned.");
         }
-        // Clear the file input
-        if (inputEl) inputEl.value = "";
       }
     } catch (e) {
-      console.error("Upload error:", e);
-      setUploadError(e.message || "Upload failed. Please check your connection and try again.");
-      setShowUploadError(true);
-      setStatusMsg("Upload failed");
+      setStatusMsg(e.message || "Upload failed");
     }
   };
 
@@ -209,31 +197,12 @@ function App() {
   };
 
   const handleToggleQR = () => {
-    // Always update QR URL with latest device info when showing
-    if (!qrVisible) {
-      const url = deviceInfo.lan_url || deviceInfo.host_url || `http://${deviceInfo.lan_ip || deviceInfo.ip}:5000`;
-      setQrUrl(url);
+    if (!qrUrl) {
+      setQrUrl(
+        deviceInfo.lan_url || deviceInfo.host_url || deviceInfo.ip
+      );
     }
     setQrVisible((v) => !v);
-  };
-
-  // Connection approval handlers
-  const handleApproveConnection = () => {
-    if (pendingRequest && socketRef.current) {
-      socketRef.current.emit("approve_request", { sid: pendingRequest.sid });
-      setStatusMsg(`Approved connection from ${pendingRequest.name || "Guest"}`);
-    }
-    setShowApprovalModal(false);
-    setPendingRequest(null);
-  };
-
-  const handleDenyConnection = () => {
-    if (pendingRequest && socketRef.current) {
-      socketRef.current.emit("deny_request", { sid: pendingRequest.sid });
-      setStatusMsg(`Denied connection from ${pendingRequest.name || "Guest"}`);
-    }
-    setShowApprovalModal(false);
-    setPendingRequest(null);
   };
 
   return (
@@ -247,12 +216,6 @@ function App() {
       >
         <div className="mx-auto max-w-5xl px-6">
           <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 -mt-12">
-            {/* Connection Status Banner */}
-            <ConnectionStatus
-              isHost={isHost}
-              isApproved={isApproved}
-              statusMsg={statusMsg}
-            />
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <ServerControl
                 isHost={isHost}
@@ -261,6 +224,7 @@ function App() {
                 qrVisible={qrVisible}
                 onStartServer={handleStartServer}
                 onStopServer={handleStopServer}
+                onConnectToHost={handleConnectToHost}
                 onToggleQR={handleToggleQR}
               />
 
@@ -277,6 +241,8 @@ function App() {
                   ? `${statusMsg} (${uploadProgress}%)`
                   : statusMsg
               }
+              qrUrl={qrUrl}
+              qrVisible={qrVisible}
               onDelete={confirmDelete}
             />
           </div>
@@ -289,22 +255,6 @@ function App() {
           onCancel={() => {
             setShowDeleteModal(false);
             setDeleteTarget(null);
-          }}
-        />
-
-        <ConnectionApprovalModal
-          show={showApprovalModal}
-          requesterName={pendingRequest?.name}
-          onApprove={handleApproveConnection}
-          onDeny={handleDenyConnection}
-        />
-
-        <UploadErrorModal
-          show={showUploadError}
-          error={uploadError}
-          onClose={() => {
-            setShowUploadError(false);
-            setUploadError(null);
           }}
         />
 
