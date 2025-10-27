@@ -10,6 +10,16 @@
         --card: #ffffff;
         --accent: #6366f1;
         --muted: #6b7280;
+        --text: #111827;
+        --muted-2: #9ca3af;
+      }
+      .dark {
+        --bg: #0b1220;
+        --card: #071027;
+        --accent: #7c3aed;
+        --muted: #9ca3af;
+        --text: #e6eef8;
+        --muted-2: #9aa6b2;
       }
       html,
       body {
@@ -17,11 +27,12 @@
         margin: 0;
         font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
         background: var(--bg);
-        color: #111827;
+        color: var(--text);
       }
       .container {
-        max-width: 880px;
-        margin: 40px auto;
+        max-width: 1200px;
+        width: calc(100% - 48px);
+        margin: 24px auto;
         padding: 24px;
       }
       .card {
@@ -39,20 +50,28 @@
         color: var(--muted);
       }
       .uploader {
-        border: 2px dashed rgba(99, 102, 241, 0.14);
-        border-radius: 10px;
+        border-width: 3px;
+        border-style: dotted;
+        border-color: rgba(99, 102, 241, 0.6);
+        border-radius: 12px;
         padding: 28px;
         text-align: center;
         cursor: pointer;
-        transition: all 0.15s;
+        transition: all 0.15s ease-in-out;
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.6),
+          transparent
+        );
       }
       .uploader.drag {
         background: linear-gradient(
           90deg,
-          rgba(99, 102, 241, 0.04),
-          rgba(99, 102, 241, 0.01)
+          rgba(99, 102, 241, 0.06),
+          rgba(99, 102, 241, 0.02)
         );
-        border-color: rgba(99, 102, 241, 0.35);
+        border-color: rgba(99, 102, 241, 0.85);
+        box-shadow: 0 10px 30px rgba(99, 102, 241, 0.12);
       }
       .uploader input[type="file"] {
         display: none;
@@ -81,6 +100,21 @@
         gap: 12px;
         flex-wrap: wrap;
         margin-top: 16px;
+      }
+
+      /* Layout: main + sidebar */
+      .layout {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 20px;
+        align-items: start;
+      }
+      /* layout children styling handled via main/aside selectors and media queries */
+      .sidebar {
+        background: transparent;
+      }
+      #files-list {
+        padding-right: 6px;
       }
       .progress {
         height: 10px;
@@ -111,10 +145,35 @@
         color: var(--muted);
         font-size: 0.85rem;
       }
-      @media (max-width: 600px) {
+      @media (max-width: 900px) {
         .container {
           margin: 18px 12px;
           padding: 18px;
+        }
+      }
+
+      @media (min-width: 900px) {
+        .layout {
+          grid-template-columns: 1.4fr 0.8fr;
+        }
+        .uploader {
+          min-height: 260px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        #files-list {
+          max-height: 60vh;
+          overflow: auto;
+        }
+      }
+      /* file-row responsive tweaks */
+      .file-row {
+        grid-template-columns: 1fr auto;
+      }
+      @media (min-width: 900px) {
+        .file-row {
+          grid-template-columns: 2fr 80px 120px 80px 100px;
         }
       }
     </style>
@@ -122,79 +181,117 @@
   <body>
     <div class="container">
       <div class="card">
-        <h1>WifiX — Share files on your LAN</h1>
-        <p class="lead">
-          Quickly upload files from any device and share a temporary download
-          link. Files auto-expire after a short time.
-        </p>
-
-        <div id="server-info" class="meta" style="margin-top: 12px">
-          <strong>Server addresses:</strong>
-          <div id="server-urls" style="margin-top: 8px"></div>
-        </div>
-
-        <div id="shared-files" style="margin-top: 16px">
-          <strong>Shared files</strong>
-          <div id="files-list" class="meta" style="margin-top: 8px">
-            Loading…
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+          "
+        >
+          <div style="flex: 1; text-align: center">
+            <h1 style="margin: 0">WifiX — Share files on your LAN</h1>
+            <p class="lead" style="margin-top: 6px">
+              Quickly upload files from any device and share a temporary
+              download link.
+            </p>
+          </div>
+          <div style="flex: 0 0 auto; text-align: right">
+            <button id="theme-toggle" class="btn ghost" title="Toggle theme">
+              🌙
+            </button>
           </div>
         </div>
 
-        <label class="uploader" id="dropzone">
-          <input
-            id="file-input"
-            type="file"
-            name="file"
-            aria-label="Choose file to upload"
-          />
-          <div>
-            <strong id="dz-text">Click or drop a file here to upload</strong>
-            <div class="meta">
-              Supported: any file (configurable). Max: server limit.
+        <!-- Responsive two-column layout: uploader/main and sidebar -->
+        <div class="layout">
+          <main>
+            <label class="uploader" id="dropzone">
+              <input
+                id="file-input"
+                type="file"
+                name="file"
+                aria-label="Choose file to upload"
+              />
+              <div>
+                <strong id="dz-text"
+                  >Click or drop a file here to upload</strong
+                >
+                <div class="meta">
+                  Supported: any file (configurable). Max: server limit.
+                </div>
+              </div>
+            </label>
+            <div id="selected-name" class="meta" style="margin-top: 8px">
+              No file selected
             </div>
-          </div>
-        </label>
-        <div id="selected-name" class="meta" style="margin-top: 8px">
-          No file selected
-        </div>
 
-        <div class="row">
-          <button id="upload-btn" class="btn primary">Upload</button>
-          <button id="show-server-qr" class="btn ghost">Show Server QR</button>
-          <button id="start-server-btn" class="btn ghost">
-            Start server (Become host)
-          </button>
-          <button id="connect-host-btn" class="btn" style="display: none">
-            Connect to host
-          </button>
-          <a
-            id="download-link"
-            class="btn"
-            style="display: none"
-            target="_blank"
-            >Open</a
-          >
-        </div>
+            <div class="row" style="margin-top: 12px">
+              <button id="upload-btn" class="btn primary">Upload</button>
+              <button id="show-server-qr" class="btn ghost">
+                Show Server QR
+              </button>
+              <button id="start-server-btn" class="btn ghost">
+                Start server (Become host)
+              </button>
+              <button id="connect-host-btn" class="btn" style="display: none">
+                Connect to host
+              </button>
+              <a
+                id="download-link"
+                class="btn"
+                style="display: none"
+                target="_blank"
+                >Open</a
+              >
+            </div>
 
-        <div class="meta" id="status" style="margin-top: 12px">
-          No uploads yet.
-        </div>
+            <div class="meta" id="status" style="margin-top: 12px">
+              No uploads yet.
+            </div>
 
-        <div style="margin-top: 12px; display: none" id="progress-wrap">
-          <div class="progress"><i id="progress-bar"></i></div>
-          <div class="meta" id="progress-text">0%</div>
-        </div>
+            <div style="margin-top: 12px; display: none" id="progress-wrap">
+              <div class="progress"><i id="progress-bar"></i></div>
+              <div class="meta" id="progress-text">0%</div>
+            </div>
 
-        <div class="qr" id="qr-area" style="display: none">
-          <img
-            id="qr-img"
-            alt="QR code"
-            style="
-              max-width: 240px;
-              border-radius: 8px;
-              border: 1px solid #eef2ff;
-            "
-          />
+            <div
+              class="qr"
+              id="qr-area"
+              style="display: none; margin-top: 12px"
+            >
+              <img
+                id="qr-img"
+                alt="QR code"
+                style="
+                  max-width: 100%;
+                  width: 240px;
+                  border-radius: 8px;
+                  border: 1px solid #eef2ff;
+                  display: block;
+                  margin: auto;
+                "
+              />
+            </div>
+          </main>
+
+          <aside class="sidebar">
+            <div id="server-info" class="meta" style="margin-bottom: 12px">
+              <strong>Server addresses:</strong>
+              <div id="server-urls" style="margin-top: 8px"></div>
+            </div>
+
+            <div id="shared-files" style="margin-top: 8px">
+              <strong>Available files</strong>
+              <div
+                id="files-list"
+                class="meta"
+                style="margin-top: 8px; max-height: 60vh; overflow: auto"
+              >
+                Loading…
+              </div>
+            </div>
+          </aside>
         </div>
 
         <footer>
@@ -283,9 +380,13 @@
           // Show a single shareable address to avoid duplicate QR buttons.
           // Prefer the LAN URL when it appears to be a non-loopback address,
           // otherwise fall back to the host_url.
-          const isLoopback = (info.lan_ip === '127.0.0.1' || info.lan_ip === undefined || info.lan_ip === null);
-          const shareUrl = !isLoopback && info.lan_url ? info.lan_url : info.host_url;
-          serverUrls.appendChild(makeRow('Shareable', shareUrl));
+          const isLoopback =
+            info.lan_ip === "127.0.0.1" ||
+            info.lan_ip === undefined ||
+            info.lan_ip === null;
+          const shareUrl =
+            !isLoopback && info.lan_url ? info.lan_url : info.host_url;
+          serverUrls.appendChild(makeRow("Shareable", shareUrl));
         })
         .catch(() => {
           serverUrls.textContent = "Unable to fetch server info.";
@@ -293,6 +394,8 @@
 
       // keep selected file reference (drag-drop can't reliably set input.files)
       let selectedFile = null;
+      // whether this client has been approved by the host
+      let isApproved = false;
 
       function setSelected(file) {
         selectedFile = file || null;
@@ -337,6 +440,29 @@
       // label already triggers the file input on click; avoid calling input.click()
       // to prevent the file picker appearing twice. Add keyboard support instead.
       dropzone.setAttribute("tabindex", "0");
+      // optimistically add to files list with size/type
+      try {
+        const wrap = document.getElementById("files-list");
+        if (wrap) {
+          const node = renderFileItem({
+            filename: json.filename || file.name,
+            url: url,
+            mtime: Date.now() / 1000,
+            size: file.size,
+            type: file.name.split(".").pop(),
+          });
+          if (wrap.querySelector("div")) {
+            // if header exists, append after header
+            const first = wrap.querySelector("div");
+            if (first) wrap.insertBefore(node, first.nextSibling);
+            else wrap.appendChild(node);
+          } else {
+            wrap.appendChild(node);
+          }
+        }
+      } catch (e) {
+        console.warn("append optimistic", e);
+      }
       dropzone.addEventListener("keydown", (ev) => {
         if (ev.key === "Enter" || ev.key === " ") {
           ev.preventDefault();
@@ -416,35 +542,44 @@
 
       // --- Shared files + realtime updates via Socket.IO ---
       function renderFileItem(item) {
+        // row container
         const row = document.createElement("div");
-        row.style.display = "flex";
-        row.style.gap = "8px";
+        row.className = "file-row";
+        row.dataset.filename = item.filename;
+        row.style.display = "grid";
+        row.style.gridTemplateColumns = "2fr 80px 120px 80px 100px";
         row.style.alignItems = "center";
-        row.style.marginBottom = "8px";
+        row.style.gap = "8px";
+        row.style.padding = "8px 6px";
+        row.style.borderBottom = "1px solid rgba(0,0,0,0.04)";
+
+        // filename (clickable)
+        const nameWrap = document.createElement("div");
         const a = document.createElement("a");
         a.href = item.url;
         a.textContent = item.filename;
         a.target = "_blank";
         a.className = "link";
-        const copy = document.createElement("button");
-        copy.className = "btn";
-        copy.textContent = "Copy";
-        copy.style.padding = "6px 8px";
-        copy.addEventListener("click", () =>
-          navigator.clipboard.writeText(item.url)
-        );
-        const qrbtn = document.createElement("button");
-        qrbtn.className = "btn ghost";
-        qrbtn.textContent = "QR";
-        qrbtn.style.padding = "6px 8px";
-        qrbtn.addEventListener("click", () => {
-          qrImg.src = "/qr?url=" + encodeURIComponent(item.url);
-          qrArea.style.display = "block";
-        });
+        a.style.fontWeight = "600";
+        a.style.display = "inline-block";
+        a.style.maxWidth = "100%";
+        a.style.overflow = "hidden";
+        a.style.textOverflow = "ellipsis";
+        a.style.whiteSpace = "nowrap";
+        nameWrap.appendChild(a);
+
+        // size
+        const sizeCol = document.createElement("div");
+        sizeCol.textContent = item.size
+          ? Math.round(item.size / 1024) + " KB"
+          : "";
+        sizeCol.style.fontSize = "0.9rem";
+        sizeCol.style.color = "var(--muted)";
+
+        // modified
         const when = document.createElement("div");
-        when.style.marginLeft = "auto";
-        when.style.color = "var(--muted)";
         when.style.fontSize = "0.85rem";
+        when.style.color = "var(--muted)";
         try {
           when.textContent = new Date(
             (item.mtime || Date.now()) * 1000
@@ -452,10 +587,51 @@
         } catch (e) {
           when.textContent = "";
         }
-        row.appendChild(a);
-        row.appendChild(copy);
-        row.appendChild(qrbtn);
+
+        // type
+        const typeCol = document.createElement("div");
+        typeCol.textContent = item.type || item.filename.split(".").pop() || "";
+        typeCol.style.fontSize = "0.9rem";
+        typeCol.style.color = "var(--muted)";
+
+        // actions
+        const actions = document.createElement("div");
+        actions.style.display = "flex";
+        actions.style.gap = "8px";
+        // download icon button
+        const dl = document.createElement("a");
+        dl.href = item.url;
+        dl.target = "_blank";
+        dl.className = "btn";
+        dl.title = "Download";
+        dl.innerHTML = "\u2B07"; // down arrow
+        dl.style.padding = "6px 8px";
+        // trash button
+        const del = document.createElement("button");
+        del.className = "btn ghost";
+        del.title = "Delete";
+        del.style.padding = "6px 8px";
+        del.textContent = "🗑";
+        del.addEventListener("click", () => confirmDelete(item.filename, row));
+
+        // copy link button
+        const copy = document.createElement("button");
+        copy.className = "btn";
+        copy.textContent = "Copy";
+        copy.style.padding = "6px 8px";
+        copy.addEventListener("click", () =>
+          navigator.clipboard.writeText(item.url)
+        );
+
+        actions.appendChild(dl);
+        actions.appendChild(copy);
+        actions.appendChild(del);
+
+        row.appendChild(nameWrap);
+        row.appendChild(sizeCol);
         row.appendChild(when);
+        row.appendChild(typeCol);
+        row.appendChild(actions);
         return row;
       }
 
@@ -469,6 +645,19 @@
               wrap.textContent = "No files yet.";
               return;
             }
+            // header row
+            const header = document.createElement("div");
+            header.style.display = "grid";
+            header.style.gridTemplateColumns = "2fr 80px 120px 80px 100px";
+            header.style.fontWeight = "700";
+            header.style.padding = "6px 4px";
+            header.style.borderBottom = "2px solid rgba(0,0,0,0.06)";
+            ["Filename", "Size", "Modified", "Type", "Actions"].forEach((h) => {
+              const d = document.createElement("div");
+              d.textContent = h;
+              header.appendChild(d);
+            });
+            wrap.appendChild(header);
             items.forEach((it) => wrap.appendChild(renderFileItem(it)));
           })
           .catch(() => {
@@ -506,21 +695,51 @@
           });
 
           socket.on("file_uploaded", (data) => {
+            // Only insert newly uploaded files into the UI when this client
+            // has been approved by the host or is the host itself. This is a
+            // UI-level safety net to avoid showing files to unapproved users.
+            if (!window.becameHost && !isApproved) return;
             const wrap = document.getElementById("files-list");
             if (wrap && typeof data.url !== "undefined") {
+              // avoid duplicate rows if already present
+              if (wrap.querySelector(`[data-filename="${data.filename}"]`))
+                return;
               const node = renderFileItem({
                 filename: data.filename,
                 url: data.url,
                 mtime: Date.now() / 1000,
+                size: data.size || 0,
+                type: data.type || "",
               });
               if (wrap.firstChild) wrap.insertBefore(node, wrap.firstChild);
               else wrap.appendChild(node);
             }
           });
 
+          // file_deleted: remove file row from list when server deletes it
+          socket.on("file_deleted", (d) => {
+            try {
+              const fn = d && d.filename;
+              if (!fn) return;
+              const wrap = document.getElementById("files-list");
+              if (!wrap) return;
+              const el = wrap.querySelector(`[data-filename="${fn}"]`);
+              if (el) el.remove();
+            } catch (e) {
+              console.warn("remove file failed", e);
+            }
+          });
+
           // Requests approved/denied for this client
           socket.on("request_approved", (d) => {
+            // mark this client as approved and load files now
+            isApproved = true;
             status.textContent = "Connected to host.";
+            try {
+              loadFiles();
+            } catch (e) {
+              console.warn("loadFiles after approval failed", e);
+            }
           });
           socket.on("request_denied", (d) => {
             status.textContent = "Connection denied by host.";
@@ -578,6 +797,9 @@
 
       // PIN flow: check status and show modal if required
       function ensureAuthThenInit() {
+        // We initialize auth first, but do NOT load files until the host approves
+        // the requesting client. This ensures files are only visible after
+        // host approval (UI-level enforcement).
         fetch("/auth/status")
           .then((r) => r.json())
           .then((st) => {
@@ -603,7 +825,7 @@
                   .then((j) => {
                     if (j.authed) {
                       div.remove();
-                      loadFiles();
+                      // don't load files yet; wait for host approval
                       initSocket();
                     }
                   })
@@ -613,17 +835,59 @@
                   });
               });
             } else {
-              loadFiles();
+              // do not call loadFiles() here — only load after approval
               initSocket();
             }
           })
           .catch(() => {
-            loadFiles();
             initSocket();
           });
       }
 
       ensureAuthThenInit();
+
+      // Delete confirmation and action
+      function confirmDelete(filename, rowEl) {
+        const modal = document.createElement("div");
+        modal.style.position = "fixed";
+        modal.style.left = 0;
+        modal.style.top = 0;
+        modal.style.right = 0;
+        modal.style.bottom = 0;
+        modal.style.background = "rgba(0,0,0,0.45)";
+        modal.style.display = "flex";
+        modal.style.alignItems = "center";
+        modal.style.justifyContent = "center";
+        modal.style.zIndex = 9999;
+        modal.innerHTML = `<div style="background:white;padding:18px;border-radius:8px;max-width:420px;width:90%"><h3 style="margin:0 0 8px">Delete file?</h3><div class="meta" style="margin-bottom:12px">Are you sure you want to permanently delete <strong>${filename}</strong>?</div><div style="display:flex;justify-content:flex-end;gap:8px"><button id="del-cancel" class="btn ghost">Cancel</button><button id="del-confirm" class="btn primary">Delete</button></div></div>`;
+        document.body.appendChild(modal);
+        document
+          .getElementById("del-cancel")
+          .addEventListener("click", () => modal.remove());
+        document.getElementById("del-confirm").addEventListener("click", () => {
+          // call DELETE endpoint
+          fetch("/delete/" + encodeURIComponent(filename), { method: "DELETE" })
+            .then((r) => {
+              if (r.ok) return r.json();
+              throw r;
+            })
+            .then(() => {
+              // remove row from UI
+              if (rowEl && rowEl.remove) rowEl.remove();
+              status.textContent = "File deleted";
+              modal.remove();
+            })
+            .catch(async (err) => {
+              let msg = "Delete failed";
+              try {
+                const j = await err.json();
+                if (j && j.error) msg = j.error;
+              } catch (e) {}
+              status.textContent = msg;
+              modal.remove();
+            });
+        });
+      }
 
       // --- Host / Connect UI wiring ---
       function attachHostUi() {
@@ -698,6 +962,32 @@
           console.warn("attachHostUi failed", e);
         }
       }, 300);
+
+      // Theme toggle (day/night) persisted in localStorage
+      const themeToggle = document.getElementById("theme-toggle");
+      function applyTheme(t) {
+        if (t === "dark") document.documentElement.classList.add("dark");
+        else document.documentElement.classList.remove("dark");
+        if (themeToggle) themeToggle.textContent = t === "dark" ? "☀️" : "🌙";
+      }
+      // initialize from storage or prefers-color-scheme
+      let theme = localStorage.getItem("wifix_theme");
+      if (!theme) {
+        theme =
+          window.matchMedia &&
+          window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light";
+      }
+      applyTheme(theme);
+      if (themeToggle)
+        themeToggle.addEventListener("click", () => {
+          theme = document.documentElement.classList.contains("dark")
+            ? "light"
+            : "dark";
+          applyTheme(theme);
+          localStorage.setItem("wifix_theme", theme);
+        });
     </script>
   </body>
 </html>

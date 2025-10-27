@@ -182,6 +182,8 @@ def list_files():
                 'filename': p.name,
                 'url': url_for('download_file', filename=p.name, _external=True),
                 'mtime': p.stat().st_mtime,
+                'size': p.stat().st_size,
+                'type': p.suffix.lower().lstrip('.') if p.suffix else '',
             })
     # sort newest first
     items.sort(key=lambda x: x['mtime'], reverse=True)
@@ -249,6 +251,30 @@ def download_file(filename):
     if not str(candidate).startswith(str(uploads.resolve())) or not candidate.exists():
         return jsonify({'error': 'file not found'}), 404
     return send_from_directory(directory=str(uploads), path=filename, as_attachment=True)
+
+
+@app.route('/delete/<path:filename>', methods=['DELETE'])
+def delete_file(filename):
+    """Delete an uploaded file from the uploads folder. Returns 200 on success.
+    This endpoint enforces PIN auth if enabled.
+    """
+    # Enforce PIN if enabled
+    if PIN_ENABLED and not session.get('authed'):
+        return jsonify({'error': 'unauthorized'}), 401
+
+    uploads = Path(app.config['UPLOAD_FOLDER'])
+    candidate = (uploads / filename).resolve()
+    if not str(candidate).startswith(str(uploads.resolve())) or not candidate.exists():
+        return jsonify({'error': 'file not found'}), 404
+    try:
+        candidate.unlink()
+        try:
+            socketio.emit('file_deleted', {'filename': filename}, broadcast=True)
+        except Exception:
+            pass
+        return jsonify({'ok': True}), 200
+    except Exception as e:
+        return jsonify({'error': 'failed to delete', 'detail': str(e)}), 500
 
 
 @app.route('/qr')
