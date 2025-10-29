@@ -112,8 +112,17 @@ function App() {
         setShowApprovalModal(true);
       },
       onHostStatus: (st) => {
-        if (st && st.available === false)
+        if (st && st.available === false) {
           setStatusMsg("Host is not available.");
+        }
+      },
+      onHostDisconnected: (data) => {
+        // Host has stopped - clear everything
+        console.log("Host disconnected:", data);
+        setIsApproved(false);
+        setIsHost(false);
+        setFiles([]);
+        setStatusMsg("Host has disconnected. All connections lost.");
       },
     });
   };
@@ -129,6 +138,9 @@ function App() {
       if (info) {
         setDeviceInfo((d) => ({ ...d, ...info }));
       }
+      // Load existing files when becoming host
+      await loadFiles();
+      setStatusMsg("Server started. Waiting for connections...");
     } else {
       alert(
         "Unable to connect to backend Socket.IO. Make sure the backend is running and reachable."

@@ -28,13 +28,16 @@ export const useSocket = (isHost, isApproved, onFileUploaded, onFileDeleted) => 
       });
 
       s.on("file_uploaded", (data) => {
-        if (!isHost && !isApproved) return;
+        // Allow ALL users to see file uploads in real-time
         if (!data || !data.filename) return;
+        console.log("file_uploaded event received:", data);
         onFileUploaded(data);
       });
 
       s.on("file_deleted", (d) => {
+        // Allow ALL users to see file deletions in real-time
         if (!d || !d.filename) return;
+        console.log("file_deleted event received:", d);
         onFileDeleted(d.filename);
       });
 
@@ -68,6 +71,19 @@ export const useSocket = (isHost, isApproved, onFileUploaded, onFileDeleted) => 
 
       s.on("disconnect", () => {
         console.log("Socket disconnected");
+      });
+
+      // Setup file event listeners for the new socket
+      s.on("file_uploaded", (data) => {
+        if (!data || !data.filename) return;
+        console.log("file_uploaded event received:", data);
+        onFileUploaded(data);
+      });
+
+      s.on("file_deleted", (d) => {
+        if (!d || !d.filename) return;
+        console.log("file_deleted event received:", d);
+        onFileDeleted(d.filename);
       });
 
       s.connect();
@@ -138,7 +154,17 @@ export const useSocket = (isHost, isApproved, onFileUploaded, onFileDeleted) => 
       s.on("incoming_request", handlers.onIncomingRequest);
     }
     if (handlers.onHostStatus) {
-      s.on("host_status", handlers.onHostStatus);
+      s.on("host_status", (st) => {
+        console.log("host_status event received:", st);
+        handlers.onHostStatus(st);
+        // If host is not available, disconnect
+        if (st && st.available === false) {
+          console.log("Host is not available - disconnecting");
+          if (handlers.onHostDisconnected) {
+            handlers.onHostDisconnected({ reason: 'host_unavailable' });
+          }
+        }
+      });
     }
   };
 
