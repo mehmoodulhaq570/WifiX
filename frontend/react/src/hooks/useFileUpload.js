@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { getApiBase } from "../utils/api";
+import { MAX_FILE_SIZE, MAX_FILE_SIZE_MB } from "../utils/constants";
 
 export const useFileUpload = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -10,6 +11,11 @@ export const useFileUpload = () => {
       throw new Error("No file provided");
     }
 
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+      throw new Error(`File too large (max ${MAX_FILE_SIZE_MB}MB)`);
+    }
+
     setIsUploading(true);
     setUploadProgress(0);
 
@@ -18,6 +24,9 @@ export const useFileUpload = () => {
         const xhr = new XMLHttpRequest();
         const apiBase = getApiBase().replace(/\/$/, "");
         xhr.open("POST", `${apiBase}/upload`, true);
+
+        // Enable credentials for session cookies
+        xhr.withCredentials = true;
 
         xhr.upload.onprogress = function (e) {
           if (e.lengthComputable) {

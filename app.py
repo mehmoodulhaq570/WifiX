@@ -5,6 +5,7 @@ import io
 import qrcode
 import importlib.util
 import pkgutil
+import logging
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import socket
@@ -15,6 +16,13 @@ from flask import Flask, request, redirect, url_for, send_from_directory, render
 from jinja2 import TemplateNotFound
 import ssl as _ssl
 
+# Setup logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 # Backfill ssl.wrap_socket if missing (some stdlib shuffles in newer Pythons)
 if not hasattr(_ssl, 'wrap_socket'):
     def _wrap_socket(sock, server_side=False, **kwargs):
@@ -23,6 +31,9 @@ if not hasattr(_ssl, 'wrap_socket'):
     _ssl.wrap_socket = _wrap_socket
 
 from flask_socketio import SocketIO
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_cors import CORS
 
 # Backfill for Python versions that removed pkgutil.get_loader (e.g. Python 3.14+)
 if not hasattr(pkgutil, 'get_loader'):
@@ -54,8 +65,26 @@ app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024 * 1024  # 1 GiB guard (adjust)
 app.secret_key = os.environ.get('SECRET_KEY') or os.urandom(24)
 
 # Allow cross-origin Socket.IO connections from the frontend dev server (Vite)
-# In development we allow all origins; for production set this to a more restrictive list.
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
+# In production, restrict to specific origins via CORS_ORIGINS environment variable
+ALLOWED_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173').split(',')
+
+# Enable CORS for all HTTP routes with credentials support
+CORS(app, resources={r"/*": {
+    "origins": ALLOWED_ORIGINS,
+    "supports_credentials": True,
+    "allow_headers": ["Content-Type", "Authorization"],
+    "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+}})
+
+socketio = SocketIO(app, cors_allowed_origins=ALLOWED_ORIGINS, async_mode='threading')
+
+# Rate limiting configuration
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
 
 # Runtime state: which connected socket is the current "host" (UI that started the server)
 HOST_SID = None
@@ -257,10 +286,12 @@ def auth_logout():
     return jsonify({'ok': True})
 
 @app.route('/upload', methods=['POST'])
+@limiter.limit("10 per minute")
 def upload_file():
     # expects form field named 'file'
     # enforce auth when PIN is enabled
     if PIN_ENABLED and not session.get('authed'):
+        logger.warning(f"Unauthorized upload attempt from {request.remote_addr}")
         return jsonify({'error': 'unauthorized'}), 401
     if 'file' not in request.files:
         return jsonify({'error': 'no file part'}), 400
@@ -269,17 +300,26 @@ def upload_file():
         return jsonify({'error': 'no selected file'}), 400
     if f and allowed_file(f.filename):
         filename = secure_filename(f.filename)
+        # Limit filename length
+        if len(filename) > 255:
+            name, ext = os.path.splitext(filename)
+            filename = name[:250] + ext
         timestamp = datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')
         saved_name = f"{timestamp}_{filename}"
         dest = Path(app.config['UPLOAD_FOLDER']) / saved_name
-        f.save(dest)
-        download_url = url_for('download_file', filename=saved_name, _external=True)
-        # notify via socketio (if clients connected)
         try:
-            socketio.emit('file_uploaded', {'filename': saved_name, 'url': download_url}, broadcast=True)
-        except Exception:
-            pass
-        return jsonify({'filename': saved_name, 'url': download_url}), 201
+            f.save(dest)
+            download_url = url_for('download_file', filename=saved_name, _external=True)
+            logger.info(f"File uploaded successfully: {saved_name} ({dest.stat().st_size} bytes)")
+            # notify via socketio (if clients connected)
+            try:
+                socketio.emit('file_uploaded', {'filename': saved_name, 'url': download_url, 'size': dest.stat().st_size}, broadcast=True)
+            except Exception as e:
+                logger.error(f"Failed to emit file_uploaded event: {e}")
+            return jsonify({'filename': saved_name, 'url': download_url}), 201
+        except Exception as e:
+            logger.error(f"Upload failed for {filename}: {e}")
+            return jsonify({'error': 'upload failed', 'detail': str(e)}), 500
     return jsonify({'error': 'file type not allowed'}), 400
 
 @app.route('/download/<path:filename>', methods=['GET'])
@@ -293,12 +333,14 @@ def download_file(filename):
 
 
 @app.route('/delete/<path:filename>', methods=['DELETE'])
+@limiter.limit("20 per minute")
 def delete_file(filename):
     """Delete an uploaded file from the uploads folder. Returns 200 on success.
     This endpoint enforces PIN auth if enabled.
     """
     # Enforce PIN if enabled
     if PIN_ENABLED and not session.get('authed'):
+        logger.warning(f"Unauthorized delete attempt from {request.remote_addr}")
         return jsonify({'error': 'unauthorized'}), 401
 
     uploads = Path(app.config['UPLOAD_FOLDER'])
@@ -307,12 +349,14 @@ def delete_file(filename):
         return jsonify({'error': 'file not found'}), 404
     try:
         candidate.unlink()
+        logger.info(f"File deleted: {filename}")
         try:
             socketio.emit('file_deleted', {'filename': filename}, broadcast=True)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"Failed to emit file_deleted event: {e}")
         return jsonify({'ok': True}), 200
     except Exception as e:
+        logger.error(f"Delete failed for {filename}: {e}")
         return jsonify({'error': 'failed to delete', 'detail': str(e)}), 500
 
 

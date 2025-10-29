@@ -15,7 +15,9 @@ export const getApiBase = () => {
 
 export const fetchDeviceInfo = async () => {
   try {
-    const infoRes = await fetch(`${getApiBase().replace(/\/$/, "")}/info`);
+    const infoRes = await fetch(`${getApiBase().replace(/\/$/, "")}/info`, {
+      credentials: "include",
+    });
     if (infoRes.ok) {
       return await infoRes.json();
     }
@@ -27,7 +29,9 @@ export const fetchDeviceInfo = async () => {
 
 export const fetchFiles = async () => {
   try {
-    const res = await fetch(`${getApiBase().replace(/\/$/, "")}/files`);
+    const res = await fetch(`${getApiBase().replace(/\/$/, "")}/files`, {
+      credentials: "include",
+    });
     if (!res.ok) throw new Error("fetch files failed");
     const items = await res.json();
     // normalize into local file shape
@@ -48,6 +52,7 @@ export const deleteFile = async (filename) => {
   const apiBase = getApiBase().replace(/\/$/, "");
   const res = await fetch(`${apiBase}/delete/${encodeURIComponent(filename)}`, {
     method: "DELETE",
+    credentials: "include",
   });
   if (!res.ok) {
     let msg = `Delete failed: ${res.status}`;
@@ -61,7 +66,9 @@ export const deleteFile = async (filename) => {
 };
 
 export const checkAuthStatus = async () => {
-  const res = await fetch(`${getApiBase().replace(/\/$/, "")}/auth/status`);
+  const res = await fetch(`${getApiBase().replace(/\/$/, "")}/auth/status`, {
+    credentials: "include",
+  });
   if (!res.ok) return null;
   return await res.json();
 };
@@ -71,6 +78,7 @@ export const authenticateWithPin = async (pin) => {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ pin }),
+    credentials: "include",
   });
   return r.ok;
 };

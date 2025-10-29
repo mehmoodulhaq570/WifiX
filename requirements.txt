@@ -5,3 +5,5 @@ qrcode==7.4
 zeroconf==0.42.0
 python-socketio==5.9.0
 eventlet==0.33.3
+Flask-Limiter
+flask-cors
