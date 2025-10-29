@@ -12,6 +12,7 @@ import Footer from "./components/Footer";
 import ConnectionApprovalModal from "./components/ConnectionApprovalModal";
 import ConnectionStatus from "./components/ConnectionStatus";
 import UploadErrorModal from "./components/UploadErrorModal";
+import SetPinModal from "./components/SetPinModal";
 
 // Hooks
 import { useSocket } from "./hooks/useSocket";
@@ -41,6 +42,10 @@ function App() {
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [uploadError, setUploadError] = useState(null);
   const [showUploadError, setShowUploadError] = useState(false);
+  const [showSetPinModal, setShowSetPinModal] = useState(false);
+  const [pendingFile, setPendingFile] = useState(null);
+  const [pinProtectionEnabled, setPinProtectionEnabled] = useState(false);
+  const [selectedFileName, setSelectedFileName] = useState("");
 
   // File upload hook
   const { uploadFile, uploadProgress, isUploading } = useFileUpload();
@@ -56,6 +61,7 @@ function App() {
           size: data.size || 0,
           mtime: Date.now(),
           type: data.type || "file",
+          has_pin: data.has_pin || false,
         },
         ...prev,
       ];
@@ -137,28 +143,51 @@ function App() {
   };
 
 
-  // Upload handler
+  // Upload handler - show PIN modal only if enabled, handle multiple files
   const handleUpload = async () => {
+    console.log('handleUpload called');
     const inputEl = fileInputRef.current;
-    const file = inputEl && inputEl.files && inputEl.files[0];
-    if (!file) {
+    console.log('Input element:', inputEl);
+    console.log('Input element files:', inputEl?.files);
+    console.log('Number of files:', inputEl?.files?.length);
+    
+    if (!inputEl || !inputEl.files || inputEl.files.length === 0) {
+      console.error('No files selected!');
       setUploadError("Please select a file first.");
       setShowUploadError(true);
       return;
     }
     
-    // Check file size (max 1GB)
+    const files = Array.from(inputEl.files);
+    console.log('Selected files:', files.map(f => f.name));
+    
+    // Check file sizes (max 1GB each)
     const maxSize = 1024 * 1024 * 1024; // 1GB
-    if (file.size > maxSize) {
-      setUploadError("File size exceeds 1GB limit. Please choose a smaller file.");
+    const oversizedFiles = files.filter(f => f.size > maxSize);
+    if (oversizedFiles.length > 0) {
+      setUploadError(`File(s) too large: ${oversizedFiles.map(f => f.name).join(', ')}. Max size is 1GB per file.`);
       setShowUploadError(true);
       return;
     }
     
+    // If PIN protection is enabled, show modal for first file (apply same PIN to all)
+    if (pinProtectionEnabled) {
+      setPendingFile(files); // Store all files
+      setShowSetPinModal(true);
+    } else {
+      // Upload all files directly without PIN
+      await uploadMultipleFiles(files, null);
+    }
+  };
+
+  // Perform the actual upload
+  const performUpload = async (file, pin) => {
+    if (!file) return;
+    
     setStatusMsg(`Uploading ${file.name}...`);
-    console.log('Starting upload for file:', file.name, 'Size:', file.size);
+    console.log('Starting upload for file:', file.name, 'Size:', file.size, 'PIN:', pin ? 'Yes' : 'No');
     try {
-      const result = await uploadFile(file);
+      const result = await uploadFile(file, pin);
       console.log('Upload result:', result);
       if (result.success) {
         setFiles((prev) => [
@@ -168,23 +197,66 @@ function App() {
             size: result.size,
             mtime: Date.now(),
             type: result.type,
+            has_pin: result.has_pin || false,
           },
           ...prev,
         ]);
         if (result.url) {
           setQrUrl(result.url);
-          setStatusMsg(`✓ Uploaded: ${result.filename}`);
+          const pinMsg = result.has_pin ? ' (PIN protected)' : '';
+          setStatusMsg(`✓ Uploaded: ${result.filename}${pinMsg}`);
         } else {
           setStatusMsg("Upload succeeded but no URL returned.");
         }
-        // Clear the file input
+        // Clear the file input and selected file name
+        const inputEl = fileInputRef.current;
         if (inputEl) inputEl.value = "";
+        setSelectedFileName("");
       }
     } catch (e) {
       console.error("Upload error:", e);
       setUploadError(e.message || "Upload failed. Please check your connection and try again.");
       setShowUploadError(true);
       setStatusMsg("Upload failed");
+    }
+  };
+
+  // Upload multiple files sequentially
+  const uploadMultipleFiles = async (files, pin) => {
+    let successCount = 0;
+    let failCount = 0;
+    
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      setStatusMsg(`Uploading ${i + 1}/${files.length}: ${file.name}...`);
+      
+      try {
+        await performUpload(file, pin);
+        successCount++;
+      } catch (e) {
+        console.error(`Failed to upload ${file.name}:`, e);
+        failCount++;
+      }
+    }
+    
+    // Show summary
+    if (failCount === 0) {
+      setStatusMsg(`✓ Successfully uploaded ${successCount} file${successCount > 1 ? 's' : ''}!`);
+    } else {
+      setStatusMsg(`Uploaded ${successCount} file(s), ${failCount} failed`);
+    }
+  };
+
+  // Actual upload after PIN is set (or skipped)
+  const handleUploadWithPin = async (pin) => {
+    setShowSetPinModal(false);
+    const files = pendingFile;
+    setPendingFile(null);
+    
+    if (Array.isArray(files)) {
+      await uploadMultipleFiles(files, pin);
+    } else if (files) {
+      await performUpload(files, pin);
     }
   };
 
@@ -267,6 +339,15 @@ function App() {
               <FileUploadZone
                 fileInputRef={fileInputRef}
                 onUpload={handleUpload}
+                onFileSelect={(files) => {
+                  // Files are already set in the ref by the component
+                  console.log('Files selected:', files.length);
+                  if (files && files.length > 0) {
+                    setSelectedFileName(files[0].name);
+                  }
+                }}
+                pinProtectionEnabled={pinProtectionEnabled}
+                onTogglePinProtection={() => setPinProtectionEnabled(!pinProtectionEnabled)}
               />
             </div>
 
@@ -305,6 +386,15 @@ function App() {
           onClose={() => {
             setShowUploadError(false);
             setUploadError(null);
+          }}
+        />
+
+        <SetPinModal
+          show={showSetPinModal}
+          onConfirm={handleUploadWithPin}
+          onCancel={() => {
+            setShowSetPinModal(false);
+            setPendingFile(null);
           }}
         />
 

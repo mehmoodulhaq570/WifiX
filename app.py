@@ -89,6 +89,9 @@ limiter = Limiter(
 # Runtime state: which connected socket is the current "host" (UI that started the server)
 HOST_SID = None
 
+# Per-file PIN storage: {filename: pin_code}
+FILE_PINS = {}
+
 
 @socketio.on('become_host')
 def handle_become_host(data):
@@ -236,7 +239,7 @@ def info():
 @app.route('/files', methods=['GET'])
 def list_files():
     """Return list of available uploaded files as JSON.
-    Each item: { filename, url, mtime }
+    Each item: { filename, url, mtime, has_pin }
     """
     # Enforce PIN if enabled: listing requires auth to see files in the UI
     if PIN_ENABLED and not session.get('authed'):
@@ -252,6 +255,7 @@ def list_files():
                 'mtime': p.stat().st_mtime,
                 'size': p.stat().st_size,
                 'type': p.suffix.lower().lstrip('.') if p.suffix else '',
+                'has_pin': p.name in FILE_PINS,
             })
     # sort newest first
     items.sort(key=lambda x: x['mtime'], reverse=True)
@@ -288,7 +292,7 @@ def auth_logout():
 @app.route('/upload', methods=['POST'])
 @limiter.limit("10 per minute")
 def upload_file():
-    # expects form field named 'file'
+    # expects form field named 'file' and optional 'pin' field
     # enforce auth when PIN is enabled
     if PIN_ENABLED and not session.get('authed'):
         logger.warning(f"Unauthorized upload attempt from {request.remote_addr}")
@@ -298,6 +302,10 @@ def upload_file():
     f = request.files['file']
     if f.filename == '':
         return jsonify({'error': 'no selected file'}), 400
+    
+    # Get optional PIN from form data
+    file_pin = request.form.get('pin', '').strip()
+    
     if f and allowed_file(f.filename):
         filename = secure_filename(f.filename)
         # Limit filename length
@@ -309,14 +317,29 @@ def upload_file():
         dest = Path(app.config['UPLOAD_FOLDER']) / saved_name
         try:
             f.save(dest)
+            
+            # Store PIN if provided
+            if file_pin:
+                FILE_PINS[saved_name] = file_pin
+                logger.info(f"PIN set for file: {saved_name}")
+            
             download_url = url_for('download_file', filename=saved_name, _external=True)
             logger.info(f"File uploaded successfully: {saved_name} ({dest.stat().st_size} bytes)")
             # notify via socketio (if clients connected)
             try:
-                socketio.emit('file_uploaded', {'filename': saved_name, 'url': download_url, 'size': dest.stat().st_size}, broadcast=True)
+                socketio.emit('file_uploaded', {
+                    'filename': saved_name, 
+                    'url': download_url, 
+                    'size': dest.stat().st_size,
+                    'has_pin': bool(file_pin)
+                }, broadcast=True)
             except Exception as e:
                 logger.error(f"Failed to emit file_uploaded event: {e}")
-            return jsonify({'filename': saved_name, 'url': download_url}), 201
+            return jsonify({
+                'filename': saved_name, 
+                'url': download_url,
+                'has_pin': bool(file_pin)
+            }), 201
         except Exception as e:
             logger.error(f"Upload failed for {filename}: {e}")
             return jsonify({'error': 'upload failed', 'detail': str(e)}), 500
@@ -329,6 +352,21 @@ def download_file(filename):
     candidate = (uploads / filename).resolve()
     if not str(candidate).startswith(str(uploads.resolve())) or not candidate.exists():
         return jsonify({'error': 'file not found'}), 404
+    
+    # Check if file has PIN protection
+    if filename in FILE_PINS:
+        # Verify PIN from session or query parameter
+        provided_pin = request.args.get('pin', '').strip()
+        session_key = f'file_pin_{filename}'
+        
+        # Check if PIN was already verified in this session
+        if not session.get(session_key):
+            # Verify provided PIN
+            if provided_pin != FILE_PINS[filename]:
+                return jsonify({'error': 'invalid_pin', 'message': 'Invalid PIN'}), 403
+            # Store verification in session
+            session[session_key] = True
+    
     return send_from_directory(directory=str(uploads), path=filename, as_attachment=True)
 
 
@@ -349,6 +387,9 @@ def delete_file(filename):
         return jsonify({'error': 'file not found'}), 404
     try:
         candidate.unlink()
+        # Remove PIN if exists
+        if filename in FILE_PINS:
+            del FILE_PINS[filename]
         logger.info(f"File deleted: {filename}")
         try:
             socketio.emit('file_deleted', {'filename': filename}, broadcast=True)
@@ -387,6 +428,9 @@ def cleanup_worker():
                 mtime = datetime.fromtimestamp(p.stat().st_mtime, tz=timezone.utc)
                 if mtime < cutoff:
                     p.unlink()
+                    # Remove PIN if exists
+                    if p.name in FILE_PINS:
+                        del FILE_PINS[p.name]
                     socketio.emit('file_deleted', {'filename': p.name})
             except Exception:
                 # ignore errors for now (permissions, race conditions)

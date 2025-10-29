@@ -1,6 +1,6 @@
 // File size limits
-export const MAX_FILE_SIZE = 1024 * 1024 * 100; // 100MB
-export const MAX_FILE_SIZE_MB = 100;
+export const MAX_FILE_SIZE = 1024 * 1024 * 1024; // 1GB
+export const MAX_FILE_SIZE_MB = 1024;
 
 // API endpoints
 export const API_ENDPOINTS = {

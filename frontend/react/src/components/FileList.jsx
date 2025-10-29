@@ -1,4 +1,9 @@
+import { useState } from "react";
+import VerifyPinModal from "./VerifyPinModal";
+
 const FileList = ({ files, statusMsg, qrUrl, qrVisible, onDelete }) => {
+  const [showVerifyPin, setShowVerifyPin] = useState(false);
+  const [pendingDownload, setPendingDownload] = useState(null);
   const getApiBase = () => {
     try {
       return (
@@ -50,27 +55,55 @@ const FileList = ({ files, statusMsg, qrUrl, qrVisible, onDelete }) => {
               </tr>
             </thead>
             <tbody>
-              {files.map((file) => (
-                <tr
-                  key={file.name}
-                  className="border-b hover:bg-blue-50 dark:hover:bg-gray-700 transition"
-                >
-                  <td className="p-3">{file.name}</td>
-                  <td className="p-3">{(file.size / 1024).toFixed(2)} KB</td>
-                  <td className="p-3 whitespace-nowrap">
-                    {new Date(file.mtime).toLocaleString()}
-                  </td>
-                  <td className="p-3">{file.type}</td>
-                  <td className="p-3 text-center">
-                    <button
-                      onClick={() => onDelete(file.name)}
-                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm sm:text-base"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {files.map((file) => {
+                const handleDownload = () => {
+                  if (file.has_pin) {
+                    setPendingDownload(file);
+                    setShowVerifyPin(true);
+                  } else {
+                    window.location.href = file.url;
+                  }
+                };
+
+                return (
+                  <tr
+                    key={file.name}
+                    className="border-b hover:bg-blue-50 dark:hover:bg-gray-700 transition"
+                  >
+                    <td className="p-3">
+                      <div className="flex items-center gap-2">
+                        {file.has_pin && (
+                          <span className="text-yellow-600 dark:text-yellow-400" title="PIN Protected">
+                            🔒
+                          </span>
+                        )}
+                        <span>{file.name}</span>
+                      </div>
+                    </td>
+                    <td className="p-3">{(file.size / 1024).toFixed(2)} KB</td>
+                    <td className="p-3 whitespace-nowrap">
+                      {new Date(file.mtime).toLocaleString()}
+                    </td>
+                    <td className="p-3">{file.type}</td>
+                    <td className="p-3 text-center">
+                      <div className="flex gap-2 justify-center">
+                        <button
+                          onClick={handleDownload}
+                          className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md text-sm sm:text-base"
+                        >
+                          Download
+                        </button>
+                        <button
+                          onClick={() => onDelete(file.name)}
+                          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm sm:text-base"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -79,6 +112,25 @@ const FileList = ({ files, statusMsg, qrUrl, qrVisible, onDelete }) => {
           No files found in the shared folder.
         </div>
       )}
+
+      <VerifyPinModal
+        show={showVerifyPin}
+        filename={pendingDownload?.name}
+        onVerify={(pin) => {
+          setShowVerifyPin(false);
+          if (pendingDownload) {
+            // Download with PIN as query parameter
+            const url = new URL(pendingDownload.url);
+            url.searchParams.set('pin', pin);
+            window.location.href = url.toString();
+          }
+          setPendingDownload(null);
+        }}
+        onCancel={() => {
+          setShowVerifyPin(false);
+          setPendingDownload(null);
+        }}
+      />
     </section>
   );
 };

@@ -41,6 +41,7 @@ export const fetchFiles = async () => {
       size: it.size || 0,
       mtime: it.mtime ? it.mtime * 1000 : Date.now(),
       type: it.type || "file",
+      has_pin: it.has_pin || false,
     }));
   } catch (e) {
     console.warn("loadFiles", e);
