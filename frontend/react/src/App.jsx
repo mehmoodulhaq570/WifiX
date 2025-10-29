@@ -129,6 +129,37 @@ function App() {
 
   useAuth(handleAuthComplete);
 
+  // Periodic file sync - check for new/deleted files every 3 seconds
+  useEffect(() => {
+    if (!isHost && !isApproved) return; // Only sync if connected
+    
+    const interval = setInterval(async () => {
+      try {
+        const serverFiles = await fetchFiles();
+        const serverFileNames = new Set(serverFiles.map(f => f.name));
+        const currentFileNames = new Set(files.map(f => f.name));
+        
+        // Check for new files on server
+        const newFiles = serverFiles.filter(f => !currentFileNames.has(f.name));
+        if (newFiles.length > 0) {
+          console.log("Found new files on server:", newFiles.map(f => f.name));
+          setFiles(prev => [...newFiles, ...prev]);
+        }
+        
+        // Check for deleted files on server
+        const deletedFiles = files.filter(f => !serverFileNames.has(f.name));
+        if (deletedFiles.length > 0) {
+          console.log("Found deleted files on server:", deletedFiles.map(f => f.name));
+          setFiles(prev => prev.filter(f => serverFileNames.has(f.name)));
+        }
+      } catch (e) {
+        console.warn("File sync check failed:", e);
+      }
+    }, 3000); // Check every 3 seconds
+    
+    return () => clearInterval(interval);
+  }, [isHost, isApproved, files]);
+
   // Server control handlers
   const handleStartServer = async () => {
     const result = await socketStartServer();
