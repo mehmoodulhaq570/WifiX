@@ -10,34 +10,69 @@ const ServerControl = ({
   onConnectToHost,
   onToggleQR,
 }) => {
+  const shareUrl = deviceInfo.lan_url || deviceInfo.host_url || `http://${deviceInfo.lan_ip || deviceInfo.ip}:5000`;
+  
   return (
     <section className="col-span-1 bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 flex flex-col items-center text-center">
       <h2 className="text-lg md:text-xl font-bold text-blue-600 mb-4 border-b pb-2 w-full">
-        Server Control
+        Connection
       </h2>
 
-      <div className="flex flex-col items-center gap-3 w-full">
-        <button
-          onClick={isHost ? onStopServer : onStartServer}
-          className={`font-semibold px-6 py-2 rounded-md w-full sm:w-52 transition ${
-            isHost
-              ? "bg-red-600 hover:bg-red-700 text-white"
-              : "bg-green-500 hover:bg-green-600 text-white"
-          }`}
-        >
-          {isHost ? "Stop Server" : "Start Server"}
-        </button>
-        <button
-          onClick={onConnectToHost}
-          className="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-6 py-2 rounded-md w-full sm:w-52 transition"
-        >
-          Connect to Host
-        </button>
+      {/* Role Selection */}
+      <div className="flex flex-col items-center gap-3 w-full mb-4">
+        <div className="bg-blue-50 dark:bg-gray-700 p-4 rounded-lg w-full">
+          <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+            Choose your role:
+          </p>
+          <button
+            onClick={isHost ? onStopServer : onStartServer}
+            className={`font-semibold px-6 py-2 rounded-md w-full transition mb-2 ${
+              isHost
+                ? "bg-red-600 hover:bg-red-700 text-white"
+                : "bg-green-500 hover:bg-green-600 text-white"
+            }`}
+          >
+            {isHost ? "🛑 Stop Hosting" : "🏠 Become Host"}
+          </button>
+          <button
+            onClick={onConnectToHost}
+            disabled={isHost}
+            className={`font-semibold px-6 py-2 rounded-md w-full transition ${
+              isHost 
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                : "bg-indigo-500 hover:bg-indigo-600 text-white"
+            }`}
+          >
+            👥 Connect as Client
+          </button>
+        </div>
       </div>
 
-      <div className="mt-6 flex flex-col items-center gap-2">
-        <p className="text-gray-600 dark:text-gray-300 text-sm sm:text-base">
-          <strong>LAN Address:</strong> {deviceInfo.lan_ip || deviceInfo.ip}
+      {/* Shareable Link Section */}
+      <div className="w-full bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mb-4">
+        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Share this link:</p>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={shareUrl}
+            readOnly
+            className="flex-1 px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300"
+          />
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(shareUrl);
+              alert('Link copied to clipboard!');
+            }}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-semibold transition"
+          >
+            📋 Copy
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-col items-center gap-2 w-full">
+        <p className="text-gray-600 dark:text-gray-300 text-sm">
+          <strong>LAN IP:</strong> {deviceInfo.lan_ip || deviceInfo.ip}
         </p>
         <div className="flex flex-col items-center gap-3 mt-2 w-full">
           <button

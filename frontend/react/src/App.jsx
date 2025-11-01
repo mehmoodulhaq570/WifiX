@@ -376,6 +376,7 @@ function App() {
                 qrVisible={qrVisible}
                 onStartServer={handleStartServer}
                 onStopServer={handleStopServer}
+                onConnectToHost={socketConnectToHost}
                 onToggleQR={handleToggleQR}
               />
 

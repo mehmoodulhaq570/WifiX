@@ -134,28 +134,66 @@ WifiX/
 
 ## Usage
 
-### Starting the Server
+### Quick Start
 
-1. Start the Flask backend (port 5000)
-2. Start the Vite dev server (port 5173/5174)
-3. Open the React app in your browser
-4. Click "Start Server" in the Server Control panel to become the host
+1. **Start the Flask backend**:
+   ```powershell
+   python app.py
+   ```
+   
+   You'll see a banner with the shareable link:
+   ```
+   ============================================================
+   🚀 WifiX Server Started Successfully!
+   ============================================================
+   
+   📡 Server is running on:
+      Local:   http://127.0.0.1:5000
+      Network: http://192.168.1.5:5000
+   
+   🔗 Share this link with others:
+      👉 http://192.168.1.5:5000
+   
+   💡 Instructions:
+      1. Open the link above in your browser to become the HOST
+      2. Share the link with others to let them connect as CLIENTS
+      3. As HOST, you'll approve/deny incoming connections
+   ============================================================
+   ```
+
+2. **Start the Vite dev server** (for development):
+   ```powershell
+   cd frontend\react
+   npm run dev
+   ```
+
+3. **Open the Network URL** in your browser (e.g., `http://192.168.1.5:5000`)
 
 ### Host Workflow
 
-1. **Start Server**: Click "Start Server" to enable hosting
-2. **Approve Clients**: Accept incoming connection requests from clients
+1. **Open the shareable link** in your browser
+2. **Click "🏠 Become Host"** to enable hosting
 3. **Upload Files**: Drag and drop files or use the upload button
-4. **Share QR Code**: Toggle "Show QR Code" to display QR for mobile access
-5. **Manage Files**: Delete files when no longer needed
-6. **Stop Server**: Click "Stop Server" to end the hosting session
+4. **Approve Clients**: Accept incoming connection requests from clients
+5. **Share Link**: Use the "📋 Copy" button or "Show QR Code" for easy sharing
+6. **Manage Files**: Delete files when no longer needed
+7. **Stop Hosting**: Click "🛑 Stop Hosting" to end the session
 
 ### Client Workflow
 
-1. Open the app in browser
-2. Click "Connect to Host" to request access
-3. Wait for host approval
-4. Once approved, browse and download available files
+1. **Get the link** from the host (e.g., `http://192.168.1.5:5000`)
+2. **Open it in your browser**
+3. **Click "👥 Connect as Client"** to request access
+4. **Wait for host approval** (host will see a popup)
+5. **Browse and download** available files once approved
+
+### Key Concepts
+
+- **Server**: The Flask backend running on your machine
+- **Host**: The person who clicks "Become Host" - controls file sharing
+- **Client**: Anyone who connects as a client - can only view/download files
+
+See [USAGE.md](USAGE.md) for detailed usage instructions and troubleshooting.
 
 ## API Endpoints
 

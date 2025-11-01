@@ -447,13 +447,32 @@ if __name__ == '__main__':
     # eventlet is recommended for production/local LAN tests
     # allow_unsafe_werkzeug=True is intentional for local development/testing
 
+    # Get LAN IP and port
+    lan_ip = _detect_lan_ip()
+    port = int(os.environ.get('PORT', 5000))
+    
+    # Display startup banner with shareable link
+    print("\n" + "="*60)
+    print("🚀 WifiX Server Started Successfully!")
+    print("="*60)
+    print(f"\n📡 Server is running on:")
+    print(f"   Local:   http://127.0.0.1:{port}")
+    print(f"   Network: http://{lan_ip}:{port}")
+    print(f"\n🔗 Share this link with others:")
+    print(f"   👉 http://{lan_ip}:{port}")
+    print(f"\n📱 Scan QR code at: http://{lan_ip}:{port}/qr")
+    print(f"\n💡 Instructions:")
+    print(f"   1. Open the link above in your browser to become the HOST")
+    print(f"   2. Share the link with others to let them connect as CLIENTS")
+    print(f"   3. As HOST, you'll approve/deny incoming connections")
+    print("\n" + "="*60 + "\n")
+
     # Optionally advertise via Zeroconf/mDNS on the LAN for auto-discovery
     zeroconf = None
     info = None
     if os.environ.get('ENABLE_ZEROCONF', '1') == '1':
         try:
             from zeroconf import ServiceInfo, Zeroconf
-            lan_ip = _detect_lan_ip()
             svc_name = f"WifiX on {lan_ip}._wifi-share._tcp.local."  # visible name in mDNS browsers
             # simple text record
             desc = {'path': '/'}
@@ -461,25 +480,25 @@ if __name__ == '__main__':
                 "_wifi-share._tcp.local.",
                 svc_name,
                 addresses=[socket.inet_aton(lan_ip)],
-                port=int(os.environ.get('PORT', 5000)),
+                port=port,
                 properties=desc,
                 server=(socket.gethostname() + '.local.')
             )
             zeroconf = Zeroconf()
             zeroconf.register_service(info)
-            print(f"Zeroconf: registered service {svc_name}")
+            logger.info(f"Zeroconf: registered service {svc_name}")
         except Exception as e:
-            print("Zeroconf registration failed:", e)
+            logger.warning(f"Zeroconf registration failed: {e}")
 
     def _cleanup_zeroconf():
         try:
             if zeroconf and info:
                 zeroconf.unregister_service(info)
                 zeroconf.close()
-                print('Zeroconf: service unregistered')
+                logger.info('Zeroconf: service unregistered')
         except Exception:
             pass
 
     atexit.register(_cleanup_zeroconf)
 
-    socketio.run(app, host='0.0.0.0', port=5000, allow_unsafe_werkzeug=True)
+    socketio.run(app, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True)
