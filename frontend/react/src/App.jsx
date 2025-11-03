@@ -185,6 +185,51 @@ function App() {
     setStatusMsg("Hosting stopped");
   };
 
+  const handleConnectToHost = async () => {
+    // Ensure socket is initialized and handlers are set up before connecting
+    const socket = socketRef.current || (await initSocket());
+    if (!socket) {
+      setStatusMsg("Failed to initialize socket connection");
+      return;
+    }
+    
+    // Setup handlers if not already done
+    setupSocketHandlers({
+      onRequestApproved: () => {
+        setIsApproved(true);
+        setStatusMsg("Connected to host.");
+        loadFiles();
+      },
+      onRequestDenied: () => {
+        setStatusMsg("Connection denied by host.");
+      },
+      onIncomingRequest: (data) => {
+        setPendingRequest(data);
+        setShowApprovalModal(true);
+      },
+      onHostStatus: (st) => {
+        if (st && st.available === false) {
+          setStatusMsg("Host is not available.");
+        }
+      },
+      onHostDisconnected: (data) => {
+        console.log("Host disconnected:", data);
+        setIsApproved(false);
+        setIsHost(false);
+        setFiles([]);
+        setStatusMsg("Host has disconnected. All connections lost.");
+      },
+    });
+    
+    // Now connect
+    const result = await socketConnectToHost();
+    if (result.success) {
+      setStatusMsg("Connection request sent. Waiting for host approval...");
+    } else {
+      setStatusMsg(result.message || "Failed to send connection request");
+    }
+  };
+
 
   // Upload handler - show PIN modal only if enabled, handle multiple files
   const handleUpload = async () => {
@@ -376,7 +421,7 @@ function App() {
                 qrVisible={qrVisible}
                 onStartServer={handleStartServer}
                 onStopServer={handleStopServer}
-                onConnectToHost={socketConnectToHost}
+                onConnectToHost={handleConnectToHost}
                 onToggleQR={handleToggleQR}
               />
 

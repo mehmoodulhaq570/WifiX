@@ -237,6 +237,7 @@ def info():
 
 
 @app.route('/files', methods=['GET'])
+@limiter.exempt
 def list_files():
     """Return list of available uploaded files as JSON.
     Each item: { filename, url, mtime, has_pin }
