@@ -2,19 +2,25 @@ import os
 import threading
 import time
 import io
-import qrcode
+import logging
 import importlib.util
 import pkgutil
-import logging
+import atexit
+import socket
+import ssl as _ssl
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-import socket
 from urllib.parse import urlparse, urlunparse
-import atexit
+
+# Third-party imports
+import qrcode
 from werkzeug.utils import secure_filename
 from flask import Flask, request, redirect, url_for, send_from_directory, render_template, jsonify, send_file, session
+from flask_socketio import SocketIO
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_cors import CORS
 from jinja2 import TemplateNotFound
-import ssl as _ssl
 
 # Setup logging
 logging.basicConfig(
@@ -29,11 +35,6 @@ if not hasattr(_ssl, 'wrap_socket'):
         ctx = _ssl.create_default_context(purpose=_ssl.Purpose.SERVER_AUTH if not server_side else _ssl.Purpose.CLIENT_AUTH)
         return ctx.wrap_socket(sock, server_side=server_side, **kwargs)
     _ssl.wrap_socket = _wrap_socket
-
-from flask_socketio import SocketIO
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
-from flask_cors import CORS
 
 # Backfill for Python versions that removed pkgutil.get_loader (e.g. Python 3.14+)
 if not hasattr(pkgutil, 'get_loader'):
@@ -456,16 +457,16 @@ if __name__ == '__main__':
     print("\n" + "="*60)
     print("🚀 WifiX Server Started Successfully!")
     print("="*60)
-    print(f"\n📡 Server is running on:")
+    print("\n📡 Server is running on:")
     print(f"   Local:   http://127.0.0.1:{port}")
     print(f"   Network: http://{lan_ip}:{port}")
-    print(f"\n🔗 Share this link with others:")
+    print("\n🔗 Share this link with others:")
     print(f"   👉 http://{lan_ip}:{port}")
     print(f"\n📱 Scan QR code at: http://{lan_ip}:{port}/qr")
-    print(f"\n💡 Instructions:")
-    print(f"   1. Open the link above in your browser to become the HOST")
-    print(f"   2. Share the link with others to let them connect as CLIENTS")
-    print(f"   3. As HOST, you'll approve/deny incoming connections")
+    print("\n💡 Instructions:")
+    print("   1. Open the link above in your browser to become the HOST")
+    print("   2. Share the link with others to let them connect as CLIENTS")
+    print("   3. As HOST, you'll approve/deny incoming connections")
     print("\n" + "="*60 + "\n")
 
     # Optionally advertise via Zeroconf/mDNS on the LAN for auto-discovery
