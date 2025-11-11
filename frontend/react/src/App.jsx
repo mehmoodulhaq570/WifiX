@@ -95,7 +95,7 @@ function App() {
       setDeviceInfo((d) => ({ ...d, ...info }));
     }
     await initSocket();
-    
+
     // Setup socket event handlers
     setupSocketHandlers({
       onRequestApproved: () => {
@@ -132,31 +132,39 @@ function App() {
   // Periodic file sync - check for new/deleted files every 3 seconds
   useEffect(() => {
     if (!isHost && !isApproved) return; // Only sync if connected
-    
+
     const interval = setInterval(async () => {
       try {
         const serverFiles = await fetchFiles();
-        const serverFileNames = new Set(serverFiles.map(f => f.name));
-        const currentFileNames = new Set(files.map(f => f.name));
-        
+        const serverFileNames = new Set(serverFiles.map((f) => f.name));
+        const currentFileNames = new Set(files.map((f) => f.name));
+
         // Check for new files on server
-        const newFiles = serverFiles.filter(f => !currentFileNames.has(f.name));
+        const newFiles = serverFiles.filter(
+          (f) => !currentFileNames.has(f.name)
+        );
         if (newFiles.length > 0) {
-          console.log("Found new files on server:", newFiles.map(f => f.name));
-          setFiles(prev => [...newFiles, ...prev]);
+          console.log(
+            "Found new files on server:",
+            newFiles.map((f) => f.name)
+          );
+          setFiles((prev) => [...newFiles, ...prev]);
         }
-        
+
         // Check for deleted files on server
-        const deletedFiles = files.filter(f => !serverFileNames.has(f.name));
+        const deletedFiles = files.filter((f) => !serverFileNames.has(f.name));
         if (deletedFiles.length > 0) {
-          console.log("Found deleted files on server:", deletedFiles.map(f => f.name));
-          setFiles(prev => prev.filter(f => serverFileNames.has(f.name)));
+          console.log(
+            "Found deleted files on server:",
+            deletedFiles.map((f) => f.name)
+          );
+          setFiles((prev) => prev.filter((f) => serverFileNames.has(f.name)));
         }
       } catch (e) {
         console.warn("File sync check failed:", e);
       }
     }, 3000); // Check every 3 seconds
-    
+
     return () => clearInterval(interval);
   }, [isHost, isApproved, files]);
 
@@ -192,7 +200,7 @@ function App() {
       setStatusMsg("Failed to initialize socket connection");
       return;
     }
-    
+
     // Setup handlers if not already done
     setupSocketHandlers({
       onRequestApproved: () => {
@@ -220,7 +228,7 @@ function App() {
         setStatusMsg("Host has disconnected. All connections lost.");
       },
     });
-    
+
     // Now connect
     const result = await socketConnectToHost();
     if (result.success) {
@@ -230,34 +238,40 @@ function App() {
     }
   };
 
-
   // Upload handler - show PIN modal only if enabled, handle multiple files
   const handleUpload = async () => {
-    console.log('handleUpload called');
+    console.log("handleUpload called");
     const inputEl = fileInputRef.current;
-    console.log('Input element:', inputEl);
-    console.log('Input element files:', inputEl?.files);
-    console.log('Number of files:', inputEl?.files?.length);
-    
+    console.log("Input element:", inputEl);
+    console.log("Input element files:", inputEl?.files);
+    console.log("Number of files:", inputEl?.files?.length);
+
     if (!inputEl || !inputEl.files || inputEl.files.length === 0) {
-      console.error('No files selected!');
+      console.error("No files selected!");
       setUploadError("Please select a file first.");
       setShowUploadError(true);
       return;
     }
-    
+
     const files = Array.from(inputEl.files);
-    console.log('Selected files:', files.map(f => f.name));
-    
+    console.log(
+      "Selected files:",
+      files.map((f) => f.name)
+    );
+
     // Check file sizes (max 1GB each)
     const maxSize = 1024 * 1024 * 1024; // 1GB
-    const oversizedFiles = files.filter(f => f.size > maxSize);
+    const oversizedFiles = files.filter((f) => f.size > maxSize);
     if (oversizedFiles.length > 0) {
-      setUploadError(`File(s) too large: ${oversizedFiles.map(f => f.name).join(', ')}. Max size is 1GB per file.`);
+      setUploadError(
+        `File(s) too large: ${oversizedFiles
+          .map((f) => f.name)
+          .join(", ")}. Max size is 1GB per file.`
+      );
       setShowUploadError(true);
       return;
     }
-    
+
     // If PIN protection is enabled, show modal for first file (apply same PIN to all)
     if (pinProtectionEnabled) {
       setPendingFile(files); // Store all files
@@ -271,12 +285,19 @@ function App() {
   // Perform the actual upload
   const performUpload = async (file, pin) => {
     if (!file) return;
-    
+
     setStatusMsg(`Uploading ${file.name}...`);
-    console.log('Starting upload for file:', file.name, 'Size:', file.size, 'PIN:', pin ? 'Yes' : 'No');
+    console.log(
+      "Starting upload for file:",
+      file.name,
+      "Size:",
+      file.size,
+      "PIN:",
+      pin ? "Yes" : "No"
+    );
     try {
       const result = await uploadFile(file, pin);
-      console.log('Upload result:', result);
+      console.log("Upload result:", result);
       if (result.success) {
         setFiles((prev) => [
           {
@@ -291,7 +312,7 @@ function App() {
         ]);
         if (result.url) {
           setQrUrl(result.url);
-          const pinMsg = result.has_pin ? ' (PIN protected)' : '';
+          const pinMsg = result.has_pin ? " (PIN protected)" : "";
           setStatusMsg(`✓ Uploaded: ${result.filename}${pinMsg}`);
         } else {
           setStatusMsg("Upload succeeded but no URL returned.");
@@ -303,7 +324,10 @@ function App() {
       }
     } catch (e) {
       console.error("Upload error:", e);
-      setUploadError(e.message || "Upload failed. Please check your connection and try again.");
+      setUploadError(
+        e.message ||
+          "Upload failed. Please check your connection and try again."
+      );
       setShowUploadError(true);
       setStatusMsg("Upload failed");
     }
@@ -313,11 +337,11 @@ function App() {
   const uploadMultipleFiles = async (files, pin) => {
     let successCount = 0;
     let failCount = 0;
-    
+
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       setStatusMsg(`Uploading ${i + 1}/${files.length}: ${file.name}...`);
-      
+
       try {
         await performUpload(file, pin);
         successCount++;
@@ -326,10 +350,14 @@ function App() {
         failCount++;
       }
     }
-    
+
     // Show summary
     if (failCount === 0) {
-      setStatusMsg(`✓ Successfully uploaded ${successCount} file${successCount > 1 ? 's' : ''}!`);
+      setStatusMsg(
+        `✓ Successfully uploaded ${successCount} file${
+          successCount > 1 ? "s" : ""
+        }!`
+      );
     } else {
       setStatusMsg(`Uploaded ${successCount} file(s), ${failCount} failed`);
     }
@@ -340,7 +368,7 @@ function App() {
     setShowSetPinModal(false);
     const files = pendingFile;
     setPendingFile(null);
-    
+
     if (Array.isArray(files)) {
       await uploadMultipleFiles(files, pin);
     } else if (files) {
@@ -371,7 +399,10 @@ function App() {
   const handleToggleQR = () => {
     // Always update QR URL with latest device info when showing
     if (!qrVisible) {
-      const url = deviceInfo.lan_url || deviceInfo.host_url || `http://${deviceInfo.lan_ip || deviceInfo.ip}:5000`;
+      const url =
+        deviceInfo.lan_url ||
+        deviceInfo.host_url ||
+        `http://${deviceInfo.lan_ip || deviceInfo.ip}:5000`;
       setQrUrl(url);
     }
     setQrVisible((v) => !v);
@@ -381,7 +412,9 @@ function App() {
   const handleApproveConnection = () => {
     if (pendingRequest && socketRef.current) {
       socketRef.current.emit("approve_request", { sid: pendingRequest.sid });
-      setStatusMsg(`Approved connection from ${pendingRequest.name || "Guest"}`);
+      setStatusMsg(
+        `Approved connection from ${pendingRequest.name || "Guest"}`
+      );
     }
     setShowApprovalModal(false);
     setPendingRequest(null);
@@ -416,6 +449,7 @@ function App() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <ServerControl
                 isHost={isHost}
+                isApproved={isApproved}
                 deviceInfo={deviceInfo}
                 qrUrl={qrUrl}
                 qrVisible={qrVisible}
@@ -430,22 +464,22 @@ function App() {
                 onUpload={handleUpload}
                 onFileSelect={(files) => {
                   // Files are already set in the ref by the component
-                  console.log('Files selected:', files.length);
+                  console.log("Files selected:", files.length);
                   if (files && files.length > 0) {
                     setSelectedFileName(files[0].name);
                   }
                 }}
                 pinProtectionEnabled={pinProtectionEnabled}
-                onTogglePinProtection={() => setPinProtectionEnabled(!pinProtectionEnabled)}
+                onTogglePinProtection={() =>
+                  setPinProtectionEnabled(!pinProtectionEnabled)
+                }
               />
             </div>
 
             <FileList
               files={files}
               statusMsg={
-                isUploading
-                  ? `${statusMsg} (${uploadProgress}%)`
-                  : statusMsg
+                isUploading ? `${statusMsg} (${uploadProgress}%)` : statusMsg
               }
               onDelete={confirmDelete}
             />

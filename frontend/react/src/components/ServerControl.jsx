@@ -2,6 +2,7 @@ import QRCode from "react-qr-code";
 
 const ServerControl = ({
   isHost,
+  isApproved,
   deviceInfo,
   qrUrl,
   qrVisible,
@@ -10,8 +11,13 @@ const ServerControl = ({
   onConnectToHost,
   onToggleQR,
 }) => {
-  const shareUrl = deviceInfo.lan_url || deviceInfo.host_url || `http://${deviceInfo.lan_ip || deviceInfo.ip}:5000`;
-  
+  const shareUrl =
+    deviceInfo.lan_url ||
+    deviceInfo.host_url ||
+    `http://${deviceInfo.lan_ip || deviceInfo.ip}:5000`;
+
+  // Disable the "Become Host" button when this client is already connected to a host
+  const disableBecomeHost = !isHost && !!isApproved;
   return (
     <section className="col-span-1 bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 flex flex-col items-center text-center">
       <h2 className="text-lg md:text-xl font-bold text-blue-600 mb-4 border-b pb-2 w-full">
@@ -26,9 +32,12 @@ const ServerControl = ({
           </p>
           <button
             onClick={isHost ? onStopServer : onStartServer}
+            disabled={disableBecomeHost}
             className={`font-semibold px-6 py-2 rounded-md w-full transition mb-2 ${
               isHost
                 ? "bg-red-600 hover:bg-red-700 text-white"
+                : disableBecomeHost
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                 : "bg-green-500 hover:bg-green-600 text-white"
             }`}
           >
@@ -38,7 +47,7 @@ const ServerControl = ({
             onClick={onConnectToHost}
             disabled={isHost}
             className={`font-semibold px-6 py-2 rounded-md w-full transition ${
-              isHost 
+              isHost
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                 : "bg-indigo-500 hover:bg-indigo-600 text-white"
             }`}
@@ -50,18 +59,22 @@ const ServerControl = ({
 
       {/* Shareable Link Section */}
       <div className="w-full bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mb-4">
-        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">Share this link:</p>
-        <div className="flex items-center gap-2">
+        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+          Share this link:
+        </p>
+        <div>
           <input
             type="text"
             value={shareUrl}
             readOnly
-            className="flex-1 px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300"
+            className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300"
           />
+        </div>
+        <div className="mt-2 flex w-full justify-center">
           <button
             onClick={() => {
               navigator.clipboard.writeText(shareUrl);
-              alert('Link copied to clipboard!');
+              alert("Link copied to clipboard!");
             }}
             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-semibold transition"
           >
