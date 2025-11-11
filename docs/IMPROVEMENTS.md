@@ -53,13 +53,13 @@ This document tracks all improvements made to enhance code quality, security, ma
 
 **Changes**:
 
-- Added `CORS_ORIGINS` environment variable to `app.py`
+- Added `CORS_ORIGINS` environment variable to `backend/app.py`
 - Default origins: `http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173`
 - Removed hardcoded wildcard `*` CORS configuration
 
 **Files Modified**:
 
-- `app.py` - Updated SocketIO initialization with environment-based origins
+- `backend/app.py` - Updated SocketIO initialization with environment-based origins
 
 **Benefits**:
 
@@ -88,7 +88,7 @@ socketio = SocketIO(app, cors_allowed_origins=ALLOWED_ORIGINS, async_mode='threa
 
 **Files Modified**:
 
-- `app.py` - Added logging setup and log statements throughout
+- `backend/app.py` - Added logging setup and log statements throughout
 
 **Benefits**:
 
@@ -122,7 +122,7 @@ logger.error(f"Upload failed: {e}")
 
 **Files Modified**:
 
-- `app.py` - Enhanced upload_file and delete_file endpoints
+- `backend/app.py` - Enhanced upload_file and delete_file endpoints
 
 **Benefits**:
 
@@ -212,7 +212,7 @@ if (file.size > MAX_FILE_SIZE) {
 
 **Files Modified**:
 
-- `app.py` - Added Limiter initialization and decorators
+- `backend/app.py` - Added Limiter initialization and decorators
 - `requirements.txt` - Already includes Flask-Limiter
 
 **Benefits**:
@@ -404,7 +404,7 @@ def delete_file(filename):
 - **Completed**: 8 high/medium priority items
 - **Planned**: 6 low priority items
 - **Files Created**: 1 (constants.js)
-- **Files Modified**: 4 (app.py, useFileUpload.js, README.md, IMPROVEMENTS.md)
+- **Files Modified**: 4 (backend/app.py, useFileUpload.js, README.md, IMPROVEMENTS.md)
 - **Directories Created**: 1 (archive/)
 - **Dependencies Installed**: 1 (Flask-Limiter)
 

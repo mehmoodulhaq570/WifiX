@@ -98,6 +98,6 @@ If upload still fails, check:
 - Added checkbox UI for PIN protection toggle
 - Checkbox placed above Upload button
 
-### Backend (app.py)
+### Backend (`backend/app.py`)
 
 - No changes needed - already supports optional PIN parameter

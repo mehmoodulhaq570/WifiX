@@ -195,7 +195,7 @@ INFO - File uploaded successfully: 20251029094500_test.txt (1234 bytes)
 - Backend is running on port 5000
 - Frontend on port 5173
 - CORS should allow localhost:5173
-- Check app.py ALLOWED_ORIGINS
+- Check backend/app.py ALLOWED_ORIGINS
 
 #### Issue: "Upload failed: Network error"
 
@@ -217,7 +217,7 @@ python backend/app.py
 **Solution**:
 
 - Frontend limit: 1GB (in App.jsx)
-- Backend limit: 1GB (in app.py)
+- Backend limit: 1GB (in backend/app.py)
 - Constants.js shows 100MB (outdated)
 - Use files under 100MB for testing
 

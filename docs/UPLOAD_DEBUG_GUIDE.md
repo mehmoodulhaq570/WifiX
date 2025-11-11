@@ -185,7 +185,7 @@ python backend/app.py
 **Debug**:
 
 ```javascript
-// Check app.py ALLOWED_ORIGINS:
+// Check backend/app.py ALLOWED_ORIGINS:
 ALLOWED_ORIGINS = os.environ
   .get(
     "CORS_ORIGINS",

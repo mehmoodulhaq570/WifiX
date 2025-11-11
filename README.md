@@ -106,6 +106,8 @@ WifiX/
    ```
    Backend will start on `http://localhost:5000`
 
+Note: uploaded files are now stored in `backend/uploads/`. During the migration the original top-level `uploads/` directory was copied and the original was renamed to `uploads_backup_20251111154617/` in the repo root as a safety backup — delete it only after you verify everything is present.
+
 ### Frontend Setup
 
 1. **Navigate to frontend directory**:

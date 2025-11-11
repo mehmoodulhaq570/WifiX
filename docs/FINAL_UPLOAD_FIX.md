@@ -28,11 +28,7 @@
 - Validates each file before upload
 - Clear error messages for oversized files
 
----
-
-## 🎯 How It Works Now
-
-### Single File Upload:
+  **Solution**: Check backend logs — ensure `backend/app.py` is correct
 
 ```
 1. Click upload zone
@@ -259,9 +255,7 @@ Look for these specific messages:
 **Error: "Failed to parse server response"**
 
 - **Cause**: Server returned invalid JSON
-- **Solution**: Check backend logs, ensure app.py is correct
-- **Cause**: Server returned invalid JSON
-- **Solution**: Check backend logs, ensure backend/app.py is correct
+- **Solution**: Check backend logs — ensure `backend/app.py` is correct
 
 **Error: "Upload timeout"**
 
