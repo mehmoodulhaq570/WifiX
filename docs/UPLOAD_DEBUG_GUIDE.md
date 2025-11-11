@@ -3,41 +3,47 @@
 ## Latest Changes Made
 
 ### 1. Fixed File Selection Display
+
 - **Added**: Visual feedback when file is selected
 - **Shows**: "✓ File Selected: filename.txt"
 - **Added**: "Clear Selection" button to reset
 
 ### 2. Removed preventDefault Bug
+
 - **Issue**: `e.preventDefault()` in onChange was blocking file selection
 - **Fixed**: Removed preventDefault from file input onChange handler
 - **Result**: File selection now works properly
 
 ### 3. Added Comprehensive Logging
+
 All upload steps now log to browser console:
+
 ```javascript
 // When file is selected:
-"handleFileUpload called, files: FileList"
-"File selected: test.txt"
+"handleFileUpload called, files: FileList";
+"File selected: test.txt";
 
 // When upload button clicked:
-"handleUpload called"
-"Input element: <input>"
-"Input element files: FileList"
-"Number of files: 1"
-"Selected file: File {name: 'test.txt', ...}"
-"Starting upload for file: test.txt Size: 1234 PIN: No"
-"Upload result: {success: true, ...}"
+"handleUpload called";
+"Input element: <input>";
+"Input element files: FileList";
+"Number of files: 1";
+"Selected file: File {name: 'test.txt', ...}";
+"Starting upload for file: test.txt Size: 1234 PIN: No";
+"Upload result: {success: true, ...}";
 ```
 
 ## How to Debug Upload Issues
 
 ### Step 1: Open Browser Console
+
 1. Press **F12** to open DevTools
 2. Go to **Console** tab
 3. Clear console (trash icon)
 4. Keep it open while testing
 
 ### Step 2: Test File Selection
+
 1. Click on the upload zone
 2. Select a small file (e.g., .txt file)
 3. **Check Console** - Should see:
@@ -54,6 +60,7 @@ All upload steps now log to browser console:
    ```
 
 ### Step 3: Test Upload
+
 1. With file selected, click "Upload" button
 2. **Check Console** - Should see:
    ```
@@ -66,6 +73,7 @@ All upload steps now log to browser console:
    ```
 
 ### Step 4: Check Network Request
+
 1. Go to **Network** tab in DevTools
 2. Filter by "upload"
 3. Look for POST request to `/upload`
@@ -78,12 +86,14 @@ All upload steps now log to browser console:
 
 ### Issue 1: "Please select a file first" Error
 
-**Symptoms**: 
+**Symptoms**:
+
 - File appears selected in UI
 - Click Upload → Error modal appears
 - Console shows: "No file selected!"
 
 **Debug**:
+
 ```javascript
 // Check console logs:
 Input element: <input>
@@ -92,11 +102,13 @@ Number of files: 0         ← PROBLEM!
 ```
 
 **Causes**:
+
 1. File input ref not properly initialized
 2. File input cleared before upload
 3. Browser security restriction
 
 **Solutions**:
+
 1. Refresh page and try again
 2. Try different file
 3. Check if antivirus is blocking
@@ -105,16 +117,19 @@ Number of files: 0         ← PROBLEM!
 ### Issue 2: Upload Fails with Network Error
 
 **Symptoms**:
+
 - File selected successfully
 - Upload starts but fails
 - Console shows: "Upload error: Network error"
 
 **Debug**:
+
 1. Check Network tab for failed request
 2. Look for CORS errors in console
 3. Check if backend is running
 
 **Solutions**:
+
 ```powershell
 # Check if Python server is running
 Get-Process python
@@ -124,33 +139,37 @@ Get-NetTCPConnection -LocalPort 5000
 
 # If not running, start backend:
 cd d:\Projects\WifiX
-python app.py
+python backend/app.py
 ```
 
 ### Issue 3: 401 Unauthorized Error
 
 **Symptoms**:
+
 - Upload fails with 401 status
 - Console shows: "Upload failed: 401"
 
 **Cause**: Server has ACCESS_PIN enabled
 
 **Solution**:
+
 1. Check if ACCESS_PIN environment variable is set
 2. If yes, you need to authenticate first
 3. Or temporarily disable ACCESS_PIN:
    ```powershell
    # Remove ACCESS_PIN
    $env:ACCESS_PIN = $null
-   python app.py
+   python backend/app.py
    ```
 
 ### Issue 4: File Size Error
 
 **Symptoms**:
+
 - Error: "File size exceeds 1GB limit"
 
 **Solution**:
+
 - Use smaller file for testing (< 100MB recommended)
 - Backend limit: 1GB
 - Frontend limit: 1GB
@@ -159,17 +178,24 @@ python app.py
 ### Issue 5: CORS Error
 
 **Symptoms**:
+
 - Console shows: "CORS policy: No 'Access-Control-Allow-Origin'"
 - Network request shows CORS error
 
 **Debug**:
+
 ```javascript
 // Check app.py ALLOWED_ORIGINS:
-ALLOWED_ORIGINS = os.environ.get('CORS_ORIGINS', 
-  'http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173').split(',')
+ALLOWED_ORIGINS = os.environ
+  .get(
+    "CORS_ORIGINS",
+    "http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173"
+  )
+  .split(",");
 ```
 
 **Solution**:
+
 1. Ensure frontend is running on port 5173
 2. Ensure backend is running on port 5000
 3. Check CORS_ORIGINS includes your frontend URL
@@ -178,6 +204,7 @@ ALLOWED_ORIGINS = os.environ.get('CORS_ORIGINS',
 ## Testing Checklist
 
 ### ✅ File Selection Test
+
 - [ ] Click upload zone opens file picker
 - [ ] Select file shows "✓ File Selected"
 - [ ] Filename displays correctly
@@ -185,6 +212,7 @@ ALLOWED_ORIGINS = os.environ.get('CORS_ORIGINS',
 - [ ] Console shows file selection logs
 
 ### ✅ Upload Test (No PIN)
+
 - [ ] PIN protection checkbox is UNCHECKED
 - [ ] Select file
 - [ ] Click "Upload" button
@@ -195,6 +223,7 @@ ALLOWED_ORIGINS = os.environ.get('CORS_ORIGINS',
 - [ ] Selected file clears after upload
 
 ### ✅ Upload Test (With PIN)
+
 - [ ] CHECK PIN protection checkbox
 - [ ] Select file
 - [ ] Click "Upload" button
@@ -205,6 +234,7 @@ ALLOWED_ORIGINS = os.environ.get('CORS_ORIGINS',
 - [ ] File appears with 🔒 icon
 
 ### ✅ Drag & Drop Test
+
 - [ ] Drag file over upload zone
 - [ ] Zone highlights (blue background)
 - [ ] Drop file
@@ -214,6 +244,7 @@ ALLOWED_ORIGINS = os.environ.get('CORS_ORIGINS',
 ## Console Log Reference
 
 ### Successful Upload Flow:
+
 ```
 1. handleFileUpload called, files: FileList {0: File, length: 1}
 2. File selected: test.txt
@@ -228,6 +259,7 @@ ALLOWED_ORIGINS = os.environ.get('CORS_ORIGINS',
 ```
 
 ### Failed Upload (No File):
+
 ```
 1. handleUpload called
 2. Input element: <input type="file" ...>
@@ -240,22 +272,25 @@ ALLOWED_ORIGINS = os.environ.get('CORS_ORIGINS',
 ## Quick Fix Commands
 
 ### Restart Backend:
+
 ```powershell
 # Stop Python
 Get-Process python | Stop-Process
 
 # Start fresh
 cd d:\Projects\WifiX
-python app.py
+python backend/app.py
 ```
 
 ### Restart Frontend:
+
 ```powershell
 # In frontend/react directory
 npm run dev
 ```
 
 ### Clear Browser Cache:
+
 - Press Ctrl+Shift+Delete
 - Clear cached files
 - Refresh page (Ctrl+F5)
@@ -275,6 +310,7 @@ If upload still fails after all debugging:
 ## Success Indicators
 
 Upload is working correctly when:
+
 - ✅ File selection shows visual feedback
 - ✅ Console logs show all steps
 - ✅ Upload completes without errors

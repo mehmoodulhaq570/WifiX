@@ -5,28 +5,33 @@
 ### How It Works
 
 1. **Host Starts Server**
+
    - User clicks "Start Server" button
    - Backend receives `become_host` event via Socket.IO
    - Backend registers this socket as `HOST_SID`
    - Host UI shows "Hosting" status with green indicator
 
 2. **Client Requests Connection**
+
    - Another user opens the host's IP address in browser
    - User clicks "Connect to Host" button
    - Optionally enters a display name (defaults to "Guest")
    - Frontend emits `request_connect` event with name to backend
 
 3. **Backend Forwards Request to Host**
+
    - Backend receives `request_connect` from client
    - Backend emits `incoming_request` event to the HOST_SID socket
    - Payload includes: `{ sid: '<client-socket-id>', name: '<display-name>' }`
 
 4. **Host Approves/Denies Connection**
+
    - Host sees a beautiful modal popup with requester's name
    - Host clicks "Allow Connection" or "Deny"
    - Frontend emits `approve_request` or `deny_request` with client's SID
 
 5. **Backend Notifies Client**
+
    - If approved: Backend emits `request_approved` to client socket
    - If denied: Backend emits `request_denied` to client socket
    - Client UI updates accordingly
@@ -38,38 +43,42 @@
      - Delete files (if authenticated)
      - Receive real-time updates via Socket.IO
 
-┌─────────────┐         ┌──────────────┐         ┌─────────────┐
-│   Client    │────────>│   Backend    │────────>│    Host     │
-│  (Browser)  │ request │ (Socket.IO)  │ forward │  (Browser)  │
-└─────────────┘         └──────────────┘         └─────────────┘
-                                                         │
-                                                         │ approve/deny
-                                                         ▼
-┌─────────────┐         ┌──────────────┐         ┌─────────────┐
-│   Client    │<────────│   Backend    │<────────│    Host     │
-│  (Access!)  │ notify  │              │         │             │
-└─────────────┘         └──────────────┘         └─────────────┘
+┌─────────────┐ ┌──────────────┐ ┌─────────────┐
+│ Client │────────>│ Backend │────────>│ Host │
+│ (Browser) │ request │ (Socket.IO) │ forward │ (Browser) │
+└─────────────┘ └──────────────┘ └─────────────┘
+│
+│ approve/deny
+▼
+┌─────────────┐ ┌──────────────┐ ┌─────────────┐
+│ Client │<────────│ Backend │<────────│ Host │
+│ (Access!) │ notify │ │ │ │
+└─────────────┘ └──────────────┘ └─────────────┘
 
 ## 📁 File Upload with Timestamp
 
 ### Upload Process
 
 1. **User Selects File**
+
    - Drag & drop or click to select
    - File stored in `fileInputRef`
 
 2. **Upload to Backend**
+
    - Frontend sends file via FormData to `/upload` endpoint
    - Shows progress percentage during upload
 
 3. **Backend Saves with Timestamp**
+
    - Backend receives file at `/upload` route
    - Generates timestamp: `YYYYMMDDHHMMSS` format (UTC)
    - Creates filename: `{timestamp}_{original_filename}`
    - Example: `20251028024500_document.pdf`
-   - Saves to `uploads/` folder
+     - Saves to `backend/uploads/` folder
 
 4. **Backend Broadcasts Update**
+
    - Backend emits `file_uploaded` event via Socket.IO
    - All connected clients receive the update
    - Payload includes: `{ filename, url, size, type }`
@@ -82,6 +91,7 @@
 ## 🔐 Security Features
 
 ### PIN Authentication (Optional)
+
 - Set `ACCESS_PIN` environment variable to enable
 - Users must enter PIN to:
   - View files
@@ -90,6 +100,7 @@
 - Session-based authentication
 
 ### File Access Control
+
 - Only approved clients can see files
 - Host always has full access
 - Unapproved clients see nothing until host approves
@@ -97,11 +108,13 @@
 ## 🌐 Network Discovery
 
 ### LAN Access
+
 - Backend detects LAN IP automatically
 - Generates QR code for easy mobile access
 - Shows both host URL and LAN URL
 
 ### Zeroconf/mDNS (Optional)
+
 - Auto-discovery on local network
 - Service name: `WifiX on {IP}._wifi-share._tcp.local.`
 - Disable with `ENABLE_ZEROCONF=0`
@@ -109,6 +122,7 @@
 ## 📊 Real-time Updates
 
 All events broadcast via Socket.IO:
+
 - `file_uploaded` - New file added
 - `file_deleted` - File removed
 - `request_approved` - Connection approved
@@ -119,8 +133,8 @@ All events broadcast via Socket.IO:
 
 ```
 WifiX/
-├── app.py                          # Backend Flask + Socket.IO server
-├── uploads/                        # Uploaded files (timestamped)
+├── backend/app.py                  # Backend Flask + Socket.IO server
+├── backend/uploads/                # Uploaded files (timestamped)
 ├── frontend/react/src/
 │   ├── App.jsx                     # Main app component
 │   ├── components/
@@ -141,18 +155,21 @@ WifiX/
 ## 🚀 Usage Example
 
 ### Start the Backend
+
 ```bash
 cd WifiX
-python app.py
+python backend/app.py
 ```
 
 ### Start the Frontend (Development)
+
 ```bash
 cd frontend/react
 npm run dev
 ```
 
 ### Host Workflow
+
 1. Open browser to `http://localhost:5173`
 2. Click "Start Server"
 3. Share the LAN URL or QR code with others
@@ -160,6 +177,7 @@ npm run dev
 5. Approve/deny each request via modal popup
 
 ### Client Workflow
+
 1. Scan QR code or enter host's IP
 2. Click "Connect to Host"
 3. Enter your name (optional)

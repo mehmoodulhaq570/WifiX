@@ -3,14 +3,17 @@
 ## ✅ All Issues Fixed
 
 ### 1. File Upload Not Working - **FIXED**
+
 **Root Cause**: Missing `onFileSelect` callback prop in FileUploadZone component.
 
 **Solution**: Added the callback handler in App.jsx.
 
 ### 2. PIN Modal Always Showing - **FIXED**
+
 **Root Cause**: Upload flow always showed PIN modal, blocking normal uploads.
 
-**Solution**: 
+**Solution**:
+
 - Added PIN protection toggle checkbox (disabled by default)
 - Upload directly when toggle is OFF
 - Show PIN modal only when toggle is ON
@@ -18,6 +21,7 @@
 ## 🎯 How It Works Now
 
 ### Default Behavior (PIN Protection OFF):
+
 ```
 1. User selects file
 2. User clicks "Upload"
@@ -26,6 +30,7 @@
 ```
 
 ### With PIN Protection (Toggle ON):
+
 ```
 1. User checks "🔒 Enable PIN Protection"
 2. User selects file
@@ -40,6 +45,7 @@
 ### Frontend Changes:
 
 #### 1. App.jsx
+
 ```javascript
 // Added state
 const [pinProtectionEnabled, setPinProtectionEnabled] = useState(false);
@@ -47,7 +53,7 @@ const [pinProtectionEnabled, setPinProtectionEnabled] = useState(false);
 // Modified upload handler
 const handleUpload = async () => {
   // ... validation ...
-  
+
   if (pinProtectionEnabled) {
     // Show PIN modal
     setPendingFile(file);
@@ -65,6 +71,7 @@ const performUpload = async (file, pin) => {
 ```
 
 #### 2. FileUploadZone.jsx
+
 ```javascript
 // Added PIN protection toggle
 <div className="flex items-center justify-center gap-2 text-sm">
@@ -74,19 +81,19 @@ const performUpload = async (file, pin) => {
     checked={pinProtectionEnabled}
     onChange={onTogglePinProtection}
   />
-  <label htmlFor="pinProtection">
-    🔒 Enable PIN Protection
-  </label>
+  <label htmlFor="pinProtection">🔒 Enable PIN Protection</label>
 </div>
 ```
 
 ### Backend (No Changes Needed):
+
 - Backend already supports optional PIN parameter
 - Works with both PIN and non-PIN uploads
 
 ## 🧪 Testing Instructions
 
 ### Test 1: Normal Upload (No PIN)
+
 1. Open browser to http://localhost:5173
 2. Ensure "🔒 Enable PIN Protection" is **UNCHECKED**
 3. Select a small test file (e.g., text file)
@@ -95,6 +102,7 @@ const performUpload = async (file, pin) => {
 6. **Verify**: File appears in list without 🔒 icon
 
 ### Test 2: Upload with PIN
+
 1. **CHECK** the "🔒 Enable PIN Protection" checkbox
 2. Select a file
 3. Click "Upload"
@@ -106,6 +114,7 @@ const performUpload = async (file, pin) => {
 9. **Verify**: File appears in list WITH 🔒 icon
 
 ### Test 3: Skip PIN
+
 1. Check PIN protection toggle
 2. Select file
 3. Click Upload
@@ -114,6 +123,7 @@ const performUpload = async (file, pin) => {
 6. **Verify**: File appears without 🔒 icon
 
 ### Test 4: Cancel Upload
+
 1. Check PIN protection toggle
 2. Select file
 3. Click Upload
@@ -121,6 +131,7 @@ const performUpload = async (file, pin) => {
 5. **Expected**: Upload cancelled, file not uploaded
 
 ### Test 5: Download PIN-Protected File
+
 1. Upload file with PIN "1234"
 2. Click "Download" on that file
 3. **Expected**: PIN verification modal appears
@@ -129,6 +140,7 @@ const performUpload = async (file, pin) => {
 6. **Expected**: File downloads successfully
 
 ### Test 6: Wrong PIN
+
 1. Click Download on PIN-protected file
 2. Enter wrong PIN: "9999"
 3. Click "Verify & Download"
@@ -139,14 +151,16 @@ const performUpload = async (file, pin) => {
 ### If Upload Still Fails:
 
 #### Check Browser Console (F12):
+
 ```javascript
 // Look for these logs:
-"Files selected: 1"
-"Starting upload for file: test.txt Size: 1234 PIN: No"
-"Upload result: {success: true, ...}"
+"Files selected: 1";
+"Starting upload for file: test.txt Size: 1234 PIN: No";
+"Upload result: {success: true, ...}";
 ```
 
 #### Check Network Tab:
+
 1. Open DevTools (F12) → Network tab
 2. Try uploading
 3. Look for POST request to `/upload`
@@ -157,6 +171,7 @@ const performUpload = async (file, pin) => {
    - If 500: Server error
 
 #### Check Backend Terminal:
+
 ```
 INFO - File uploaded successfully: 20251029094500_test.txt (1234 bytes)
 ```
@@ -164,35 +179,43 @@ INFO - File uploaded successfully: 20251029094500_test.txt (1234 bytes)
 ### Common Issues:
 
 #### Issue: "Upload failed: 401 Unauthorized"
+
 **Cause**: Server has ACCESS_PIN enabled
-**Solution**: 
+**Solution**:
+
 - Check if ACCESS_PIN environment variable is set
 - If yes, authenticate first via login modal
 - Or remove ACCESS_PIN from environment
 
 #### Issue: "Upload failed: CORS error"
+
 **Cause**: CORS configuration mismatch
-**Solution**: 
+**Solution**:
+
 - Backend is running on port 5000
 - Frontend on port 5173
 - CORS should allow localhost:5173
 - Check app.py ALLOWED_ORIGINS
 
 #### Issue: "Upload failed: Network error"
+
 **Cause**: Backend not running
 **Solution**:
+
 ```powershell
 # Check if Python server is running
 Get-Process python
 
 # If not running, start it:
 cd d:\Projects\WifiX
-python app.py
+python backend/app.py
 ```
 
 #### Issue: File size error
+
 **Cause**: File too large
 **Solution**:
+
 - Frontend limit: 1GB (in App.jsx)
 - Backend limit: 1GB (in app.py)
 - Constants.js shows 100MB (outdated)
@@ -201,6 +224,7 @@ python app.py
 ## 🎨 UI Features
 
 ### PIN Protection Toggle:
+
 - ✅ Checkbox with lock icon
 - ✅ Clear label "Enable PIN Protection"
 - ✅ Positioned above Upload button
@@ -208,6 +232,7 @@ python app.py
 - ✅ Default: OFF (unchecked)
 
 ### PIN Setting Modal:
+
 - ✅ Clear title "Set File PIN (Optional)"
 - ✅ PIN input (min 4 chars)
 - ✅ Confirm PIN input
@@ -215,11 +240,13 @@ python app.py
 - ✅ Three buttons: "Skip", "Cancel", "Set PIN"
 
 ### PIN Verification Modal:
+
 - ✅ Shows filename being accessed
 - ✅ PIN input field
 - ✅ Two buttons: "Cancel", "Verify & Download"
 
 ### File List:
+
 - ✅ 🔒 icon for PIN-protected files
 - ✅ Download button for each file
 - ✅ Delete button for each file
@@ -227,16 +254,16 @@ python app.py
 
 ## 📊 Summary
 
-| Feature | Status | Notes |
-|---------|--------|-------|
-| File Upload (No PIN) | ✅ Fixed | Works immediately |
-| File Upload (With PIN) | ✅ Working | Toggle-based |
-| PIN Protection Toggle | ✅ Added | Checkbox UI |
-| PIN Setting Modal | ✅ Working | Validation included |
-| PIN Verification | ✅ Working | On download |
-| File List Display | ✅ Enhanced | Shows PIN status |
-| Download Button | ✅ Added | Per file |
-| Backend Support | ✅ Complete | No changes needed |
+| Feature                | Status      | Notes               |
+| ---------------------- | ----------- | ------------------- |
+| File Upload (No PIN)   | ✅ Fixed    | Works immediately   |
+| File Upload (With PIN) | ✅ Working  | Toggle-based        |
+| PIN Protection Toggle  | ✅ Added    | Checkbox UI         |
+| PIN Setting Modal      | ✅ Working  | Validation included |
+| PIN Verification       | ✅ Working  | On download         |
+| File List Display      | ✅ Enhanced | Shows PIN status    |
+| Download Button        | ✅ Added    | Per file            |
+| Backend Support        | ✅ Complete | No changes needed   |
 
 ## 🚀 Ready to Test
 
@@ -249,6 +276,7 @@ The application is now ready for testing. All upload issues have been resolved:
 5. ✅ Download verification for protected files
 
 **Next Steps:**
+
 1. Test normal upload (PIN toggle OFF)
 2. Test PIN upload (PIN toggle ON)
 3. Test download with PIN verification

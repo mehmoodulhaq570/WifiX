@@ -51,7 +51,7 @@ if not hasattr(pkgutil, 'get_loader'):
     pkgutil.get_loader = _get_loader
 
 # Configuration
-UPLOAD_FOLDER = Path(__file__).parent.parent / "uploads"
+UPLOAD_FOLDER = Path(__file__).parent / "uploads"
 UPLOAD_FOLDER.mkdir(exist_ok=True)
 ALLOWED_EXTENSIONS = None  # allow all for Phase 1; restrict later if needed
 # By default keep uploaded files until user explicitly deletes them.

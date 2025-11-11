@@ -8,7 +8,13 @@ env/
 .venv\
 venv/
 venv\
+/
+# Old top-level uploads (if present)
 /uploads/
+# Backend uploads directory
+/backend/uploads/
+# Backup uploads created during migration
+/uploads_backup_*
 *.egg-info/
 .dist-info/
 

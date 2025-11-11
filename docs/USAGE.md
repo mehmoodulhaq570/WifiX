@@ -7,7 +7,7 @@
 Run the Flask backend:
 
 ```bash
-python app.py
+python backend/app.py
 ```
 
 You'll see a banner like this:
@@ -53,26 +53,29 @@ You'll see a banner like this:
 
 ### Server vs Host vs Client
 
-- **Server**: The Flask backend running on your machine (started with `python app.py`)
+- **Server**: The Flask backend running on your machine (started with `python backend/app.py`)
 - **Host**: The first person who clicks "Become Host" - controls file sharing and approves connections
 - **Client**: Anyone else who connects - can view/download files after host approval
 
 ### Roles
 
-| Role | Can Upload | Can Delete | Can Approve Connections | Needs Approval |
-|------|-----------|-----------|------------------------|----------------|
-| Host | ✅ Yes | ✅ Yes | ✅ Yes | ❌ No |
-| Client | ❌ No | ❌ No | ❌ No | ✅ Yes |
+| Role   | Can Upload | Can Delete | Can Approve Connections | Needs Approval |
+| ------ | ---------- | ---------- | ----------------------- | -------------- |
+| Host   | ✅ Yes     | ✅ Yes     | ✅ Yes                  | ❌ No          |
+| Client | ❌ No      | ❌ No      | ❌ No                   | ✅ Yes         |
 
 ## 📱 Sharing Methods
 
 ### Method 1: Copy Link
+
 Use the **"📋 Copy"** button in the UI to copy the shareable link
 
 ### Method 2: QR Code
+
 Click **"Show QR Code"** and let others scan it with their phone camera
 
 ### Method 3: Manual
+
 Share the IP address shown in the terminal (e.g., `192.168.1.5:5000`)
 
 ## 🔒 Security Features
@@ -84,10 +87,10 @@ Set `ACCESS_PIN` environment variable to require authentication:
 ```bash
 # Windows PowerShell
 $env:ACCESS_PIN="1234"
-python app.py
+python backend/app.py
 
 # Linux/Mac
-ACCESS_PIN=1234 python app.py
+ACCESS_PIN=1234 python backend/app.py
 ```
 
 ### Per-File PIN Protection
@@ -101,23 +104,23 @@ When uploading a file, you can enable "PIN Protection" to require a PIN for down
 ```bash
 # Windows PowerShell
 $env:PORT="8080"
-python app.py
+python backend/app.py
 
 # Linux/Mac
-PORT=8080 python app.py
+PORT=8080 python backend/app.py
 ```
 
 ### Auto-Delete Old Files
 
 ```bash
 # Delete files older than 1 hour (3600 seconds)
-FILE_TTL_SECONDS=3600 python app.py
+FILE_TTL_SECONDS=3600 python backend/app.py
 ```
 
 ### Disable Zeroconf/mDNS
 
 ```bash
-ENABLE_ZEROCONF=0 python app.py
+ENABLE_ZEROCONF=0 python backend/app.py
 ```
 
 ## 🐛 Troubleshooting
@@ -138,7 +141,7 @@ The app auto-syncs every 3 seconds. If issues persist, refresh the browser.
 
 ## 📝 Example Workflow
 
-1. **Alice** starts the server on her laptop: `python app.py`
+1. **Alice** starts the server on her laptop: `python backend/app.py`
 2. **Alice** opens `http://192.168.1.5:5000` and clicks "Become Host"
 3. **Alice** uploads some photos
 4. **Bob** opens the same URL on his phone

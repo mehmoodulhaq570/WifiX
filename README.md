@@ -42,7 +42,7 @@ WifiX/
 ├── backend/
 │   ├── app.py                      # Flask backend server
 │   └── requirements.txt            # Python dependencies for backend
-├── uploads/                        # File storage directory
+├── backend/uploads/                # File storage directory
 ├── frontend/
 │   └── react/
 │       ├── src/
@@ -270,7 +270,7 @@ See [USAGE.md](USAGE.md) for detailed usage instructions and troubleshooting.
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
-python app.py
+python backend/app.py
 ```
 
 ### Run Frontend in Development
