@@ -51,7 +51,7 @@ if not hasattr(pkgutil, 'get_loader'):
     pkgutil.get_loader = _get_loader
 
 # Configuration
-UPLOAD_FOLDER = Path(__file__).parent / "uploads"
+UPLOAD_FOLDER = Path(__file__).parent.parent / "uploads"
 UPLOAD_FOLDER.mkdir(exist_ok=True)
 ALLOWED_EXTENSIONS = None  # allow all for Phase 1; restrict later if needed
 # By default keep uploaded files until user explicitly deletes them.
@@ -59,7 +59,10 @@ ALLOWED_EXTENSIONS = None  # allow all for Phase 1; restrict later if needed
 FILE_TTL_SECONDS = int(os.environ.get("FILE_TTL_SECONDS", 0))  # 0 = disabled by default
 CLEANUP_INTERVAL_SECONDS = int(os.environ.get("CLEANUP_INTERVAL_SECONDS", 60))
 
-app = Flask(__name__, template_folder="templates")
+ROOT_DIR = Path(__file__).parent.parent
+# Look for templates at the repository root `templates/` if present so the
+# app can still render a legacy Jinja UI when run from the backend/ folder.
+app = Flask(__name__, template_folder=str(ROOT_DIR / "templates"))
 app.config["UPLOAD_FOLDER"] = str(UPLOAD_FOLDER)
 app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024 * 1024  # 1 GiB guard (adjust)
 # Session secret for optional PIN flow
@@ -199,8 +202,8 @@ def index():
     try:
         return render_template('index.html')
     except TemplateNotFound:
-        # If frontend React build exists, serve it directly
-        built = Path(__file__).parent / 'frontend' / 'react' / 'dist' / 'index.html'
+        # If frontend React build exists, serve it directly (resolve from repo root)
+        built = ROOT_DIR / 'frontend' / 'react' / 'dist' / 'index.html'
         if built.exists():
             return send_file(str(built))
         # Otherwise redirect to the Vite dev server (adjust via env if needed)
@@ -401,6 +404,7 @@ def delete_file(filename):
     except Exception as e:
         logger.error(f"Delete failed for {filename}: {e}")
         return jsonify({'error': 'failed to delete', 'detail': str(e)}), 500
+
 
 
 @app.route('/qr')

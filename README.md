@@ -39,8 +39,9 @@ WifiX is a local area network (LAN) file sharing application built with Flask ba
 
 ```
 WifiX/
-├── app.py                          # Flask backend server
-├── requirements.txt                # Python dependencies
+├── backend/
+│   ├── app.py                      # Flask backend server
+│   └── requirements.txt            # Python dependencies for backend
 ├── uploads/                        # File storage directory
 ├── frontend/
 │   └── react/
@@ -86,7 +87,7 @@ WifiX/
 2. **Install Python dependencies**:
 
    ```powershell
-   pip install -r requirements.txt
+   pip install -r backend/requirements.txt
    ```
 
 3. **Configure environment variables** (optional):
@@ -101,7 +102,7 @@ WifiX/
 
 4. **Run the Flask backend**:
    ```powershell
-   python app.py
+   python backend/app.py
    ```
    Backend will start on `http://localhost:5000`
 
@@ -137,23 +138,25 @@ WifiX/
 ### Quick Start
 
 1. **Start the Flask backend**:
+
    ```powershell
-   python app.py
+   python backend/app.py
    ```
-   
+
    You'll see a banner with the shareable link:
+
    ```
    ============================================================
    🚀 WifiX Server Started Successfully!
    ============================================================
-   
+
    📡 Server is running on:
       Local:   http://127.0.0.1:5000
       Network: http://192.168.1.5:5000
-   
+
    🔗 Share this link with others:
       👉 http://192.168.1.5:5000
-   
+
    💡 Instructions:
       1. Open the link above in your browser to become the HOST
       2. Share the link with others to let them connect as CLIENTS
@@ -162,6 +165,7 @@ WifiX/
    ```
 
 2. **Start the Vite dev server** (for development):
+
    ```powershell
    cd frontend\react
    npm run dev
