@@ -1,5 +1,6 @@
 import QRCode from "react-qr-code";
 import { useState } from "react";
+import toast from "react-hot-toast";
 
 const ServerControl = ({
   isHost,
@@ -78,7 +79,7 @@ const ServerControl = ({
           <button
             onClick={() => {
               navigator.clipboard.writeText(shareUrl);
-              alert("Link copied to clipboard!");
+              toast.success("Link copied to clipboard!", { duration: 2000 });
             }}
             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-semibold transition"
           >

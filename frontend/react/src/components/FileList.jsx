@@ -1,7 +1,14 @@
 import { useState } from "react";
 import VerifyPinModal from "./VerifyPinModal";
 
-const FileList = ({ files, statusMsg, qrUrl, qrVisible, onDelete }) => {
+const FileList = ({
+  files,
+  statusMsg,
+  qrUrl,
+  qrVisible,
+  onDelete,
+  uploadingFiles = {},
+}) => {
   const [showVerifyPin, setShowVerifyPin] = useState(false);
   const [pendingDownload, setPendingDownload] = useState(null);
   const getApiBase = () => {
@@ -55,6 +62,57 @@ const FileList = ({ files, statusMsg, qrUrl, qrVisible, onDelete }) => {
               </tr>
             </thead>
             <tbody>
+              {/* Show currently uploading files first */}
+              {Object.entries(uploadingFiles).map(([filename, uploadInfo]) => (
+                <tr
+                  key={`uploading-${filename}`}
+                  className="border-b bg-blue-50 dark:bg-gray-700"
+                >
+                  <td className="p-3" colSpan="5">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <svg
+                            className="w-5 h-5 text-blue-600 animate-spin"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                            />
+                          </svg>
+                          <span className="font-medium">{filename}</span>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm">
+                          <span className="text-gray-600 dark:text-gray-300">
+                            {uploadInfo.speed}
+                          </span>
+                          <span className="font-semibold text-blue-600">
+                            {uploadInfo.progress}%
+                          </span>
+                        </div>
+                      </div>
+                      {/* Progress bar */}
+                      <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+                        <div
+                          className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadInfo.progress}%` }}
+                        ></div>
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {(uploadInfo.loaded / 1024 / 1024).toFixed(2)} MB /{" "}
+                        {(uploadInfo.total / 1024 / 1024).toFixed(2)} MB
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+
+              {/* Show existing files */}
               {files.map((file) => {
                 const handleDownload = () => {
                   if (file.has_pin) {
@@ -73,7 +131,10 @@ const FileList = ({ files, statusMsg, qrUrl, qrVisible, onDelete }) => {
                     <td className="p-3">
                       <div className="flex items-center gap-2">
                         {file.has_pin && (
-                          <span className="text-yellow-600 dark:text-yellow-400" title="PIN Protected">
+                          <span
+                            className="text-yellow-600 dark:text-yellow-400"
+                            title="PIN Protected"
+                          >
                             🔒
                           </span>
                         )}
@@ -121,7 +182,7 @@ const FileList = ({ files, statusMsg, qrUrl, qrVisible, onDelete }) => {
           if (pendingDownload) {
             // Download with PIN as query parameter
             const url = new URL(pendingDownload.url);
-            url.searchParams.set('pin', pin);
+            url.searchParams.set("pin", pin);
             window.location.href = url.toString();
           }
           setPendingDownload(null);

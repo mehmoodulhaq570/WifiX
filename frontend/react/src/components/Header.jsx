@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import BugReportModal from "./BugReportModal";
 
 const Header = () => {
   // C: Config-driven URLs from environment variables
@@ -10,6 +11,7 @@ const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  const [showBugReport, setShowBugReport] = useState(false); // C: Bug report modal
 
   // D: Theme toggle state (persisted to localStorage)
   const [theme, setTheme] = useState(() => {
@@ -40,6 +42,9 @@ const Header = () => {
         } else if (showAbout) {
           setShowAbout(false);
           menuButtonRef.current?.focus();
+        } else if (showBugReport) {
+          setShowBugReport(false);
+          menuButtonRef.current?.focus();
         } else if (menuOpen) {
           setMenuOpen(false);
         }
@@ -47,7 +52,7 @@ const Header = () => {
     };
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
-  }, [menuOpen, showSettings, showAbout]);
+  }, [menuOpen, showSettings, showAbout, showBugReport]);
 
   // D: Apply theme to document and persist
   useEffect(() => {
@@ -147,13 +152,13 @@ const Header = () => {
                   </svg>
                   <span>About</span>
                 </button>
-                <a
+                <button
                   role="menuitem"
-                  href={ISSUE_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-3 text-sm hover:bg-gray-100 border-t transition"
-                  onClick={() => setMenuOpen(false)}
+                  onClick={() => {
+                    setShowBugReport(true);
+                    setMenuOpen(false);
+                  }}
+                  className="flex items-center gap-2 w-full text-left px-4 py-3 text-sm hover:bg-gray-100 border-t transition"
                 >
                   <svg
                     className="w-5 h-5 text-red-600 flex-shrink-0"
@@ -169,7 +174,7 @@ const Header = () => {
                     />
                   </svg>
                   <span className="ml-1">Report Bug/Error</span>
-                </a>
+                </button>
                 <a
                   role="menuitem"
                   href={GITHUB_REPO}
@@ -365,6 +370,16 @@ const Header = () => {
           </div>
         </div>
       )}
+
+      {/* Bug Report Modal */}
+      <BugReportModal
+        show={showBugReport}
+        onClose={() => {
+          setShowBugReport(false);
+          menuButtonRef.current?.focus();
+        }}
+        githubRepo={GITHUB_REPO}
+      />
     </>
   );
 };

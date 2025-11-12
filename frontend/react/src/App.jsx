@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import toast, { Toaster } from "react-hot-toast";
 import "./App.css";
 
 // Components
@@ -46,6 +47,9 @@ function App() {
   const [pendingFile, setPendingFile] = useState(null);
   const [pinProtectionEnabled, setPinProtectionEnabled] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState("");
+
+  // B: Track per-file upload progress and speed
+  const [uploadingFiles, setUploadingFiles] = useState({}); // { filename: { progress: 0-100, speed: "123 KB/s", loaded: bytes, total: bytes } }
 
   // File upload hook
   const { uploadFile, uploadProgress, isUploading } = useFileUpload();
@@ -180,9 +184,11 @@ function App() {
       // Load existing files when becoming host
       await loadFiles();
       setStatusMsg("Server started. Waiting for connections...");
+      toast.success("Server started successfully!");
     } else {
-      alert(
-        "Unable to connect to backend Socket.IO. Make sure the backend is running and reachable."
+      toast.error(
+        "Unable to connect to backend Socket.IO. Make sure the backend is running and reachable.",
+        { duration: 6000 }
       );
     }
   };
@@ -282,7 +288,7 @@ function App() {
     }
   };
 
-  // Perform the actual upload
+  // Perform the actual upload with progress and speed tracking
   const performUpload = async (file, pin) => {
     if (!file) return;
 
@@ -295,8 +301,100 @@ function App() {
       "PIN:",
       pin ? "Yes" : "No"
     );
+
+    // Initialize upload tracking
+    const startTime = Date.now();
+    let lastLoaded = 0;
+    let lastTime = startTime;
+
+    setUploadingFiles((prev) => ({
+      ...prev,
+      [file.name]: {
+        progress: 0,
+        speed: "0 KB/s",
+        loaded: 0,
+        total: file.size,
+      },
+    }));
+
     try {
-      const result = await uploadFile(file, pin);
+      // Create custom upload with progress tracking
+      const result = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        const apiBase = import.meta.env.VITE_API_URL || window.location.origin;
+        xhr.open("POST", `${apiBase.replace(/\/$/, "")}/upload`, true);
+        xhr.withCredentials = true;
+
+        xhr.upload.onprogress = function (e) {
+          if (e.lengthComputable) {
+            const now = Date.now();
+            const timeDiff = (now - lastTime) / 1000; // seconds
+            const bytesDiff = e.loaded - lastLoaded;
+
+            // Calculate speed
+            let speed = "0 KB/s";
+            if (timeDiff > 0) {
+              const bytesPerSecond = bytesDiff / timeDiff;
+              if (bytesPerSecond > 1024 * 1024) {
+                speed = `${(bytesPerSecond / (1024 * 1024)).toFixed(2)} MB/s`;
+              } else if (bytesPerSecond > 1024) {
+                speed = `${(bytesPerSecond / 1024).toFixed(2)} KB/s`;
+              } else {
+                speed = `${bytesPerSecond.toFixed(0)} B/s`;
+              }
+            }
+
+            const progress = Math.round((e.loaded / e.total) * 100);
+
+            setUploadingFiles((prev) => ({
+              ...prev,
+              [file.name]: {
+                progress,
+                speed,
+                loaded: e.loaded,
+                total: e.total,
+              },
+            }));
+
+            lastLoaded = e.loaded;
+            lastTime = now;
+          }
+        };
+
+        xhr.onload = function () {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const json = JSON.parse(xhr.responseText);
+              resolve({
+                success: true,
+                filename: json.filename || json.name,
+                url: json.url,
+                size: json.size || file.size,
+                type: json.type || file.type,
+                has_pin: json.has_pin || false,
+              });
+            } catch (err) {
+              reject(new Error("Failed to parse server response"));
+            }
+          } else {
+            let errorMsg = `Upload failed (${xhr.status})`;
+            try {
+              const errorJson = JSON.parse(xhr.responseText);
+              if (errorJson.error) errorMsg = errorJson.error;
+            } catch (e) {}
+            reject(new Error(errorMsg));
+          }
+        };
+
+        xhr.onerror = () => reject(new Error("Network error"));
+        xhr.ontimeout = () => reject(new Error("Upload timeout"));
+
+        const fd = new FormData();
+        fd.append("file", file);
+        if (pin) fd.append("pin", pin);
+        xhr.send(fd);
+      });
+
       console.log("Upload result:", result);
       if (result.success) {
         setFiles((prev) => [
@@ -314,6 +412,7 @@ function App() {
           setQrUrl(result.url);
           const pinMsg = result.has_pin ? " (PIN protected)" : "";
           setStatusMsg(`✓ Uploaded: ${result.filename}${pinMsg}`);
+          toast.success(`${result.filename} uploaded successfully!`);
         } else {
           setStatusMsg("Upload succeeded but no URL returned.");
         }
@@ -322,6 +421,15 @@ function App() {
         if (inputEl) inputEl.value = "";
         setSelectedFileName("");
       }
+
+      // Remove from uploading files after brief delay
+      setTimeout(() => {
+        setUploadingFiles((prev) => {
+          const updated = { ...prev };
+          delete updated[file.name];
+          return updated;
+        });
+      }, 1000);
     } catch (e) {
       console.error("Upload error:", e);
       setUploadError(
@@ -330,6 +438,14 @@ function App() {
       );
       setShowUploadError(true);
       setStatusMsg("Upload failed");
+      toast.error(`Failed to upload ${file.name}`);
+
+      // Remove from uploading files
+      setUploadingFiles((prev) => {
+        const updated = { ...prev };
+        delete updated[file.name];
+        return updated;
+      });
     }
   };
 
@@ -387,12 +503,42 @@ function App() {
     setShowDeleteModal(false);
     setDeleteTarget(null);
     if (!name) return;
+
+    // Store deleted file for potential undo
+    const deletedFile = files.find((f) => f.name === name);
+
     try {
       await deleteFile(name);
       setFiles((prev) => prev.filter((f) => f.name !== name));
       setStatusMsg("File deleted");
+
+      // Show toast with undo option
+      toast.success(
+        (t) => (
+          <div className="flex items-center gap-2">
+            <span>File deleted</span>
+            <button
+              onClick={() => {
+                // Restore the file in UI (note: actual file is deleted from server)
+                if (deletedFile) {
+                  setFiles((prev) => [deletedFile, ...prev]);
+                  toast.dismiss(t.id);
+                  toast("File restored in UI (re-upload needed for server)", {
+                    icon: "ℹ️",
+                  });
+                }
+              }}
+              className="ml-2 px-2 py-1 bg-white text-gray-900 rounded text-xs font-semibold hover:bg-gray-100"
+            >
+              Undo
+            </button>
+          </div>
+        ),
+        { duration: 5000 }
+      );
     } catch (e) {
       setStatusMsg(e.message || "Delete failed");
+      toast.error(e.message || "Failed to delete file");
     }
   };
 
@@ -431,6 +577,30 @@ function App() {
 
   return (
     <>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: "#363636",
+            color: "#fff",
+          },
+          success: {
+            duration: 3000,
+            iconTheme: {
+              primary: "#10b981",
+              secondary: "#fff",
+            },
+          },
+          error: {
+            duration: 5000,
+            iconTheme: {
+              primary: "#ef4444",
+              secondary: "#fff",
+            },
+          },
+        }}
+      />
       <Header />
 
       <main
@@ -482,6 +652,7 @@ function App() {
                 isUploading ? `${statusMsg} (${uploadProgress}%)` : statusMsg
               }
               onDelete={confirmDelete}
+              uploadingFiles={uploadingFiles}
             />
           </div>
         </div>
