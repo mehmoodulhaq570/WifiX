@@ -436,10 +436,10 @@ function App() {
       <main
         className={`transition-colors duration-300 ${
           darkMode ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"
-        } font-sans py-12`}
+        } font-sans py-6 min-h-screen`}
       >
-        <div className="mx-auto max-w-5xl px-6">
-          <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-8 -mt-12">
+        <div className="w-full px-4 md:px-8">
+          <div className="bg-white dark:bg-gray-800 rounded-none md:rounded-3xl shadow-none md:shadow-2xl p-6 md:p-8 -mt-0 md:-mt-12 w-full">
             {/* Connection Status Banner */}
             <ConnectionStatus
               isHost={isHost}
