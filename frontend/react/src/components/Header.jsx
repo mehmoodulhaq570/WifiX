@@ -1,13 +1,25 @@
 import { useState, useRef, useEffect } from "react";
 
 const Header = () => {
-  // Replace this with your actual GitHub repository URL
-  const GITHUB_REPO = "https://github.com/mehmoodulhaq570/WifiX";
+  // C: Config-driven URLs from environment variables
+  const GITHUB_REPO =
+    import.meta.env.VITE_GITHUB_REPO ||
+    "https://github.com/mehmoodulhaq570/WifiX";
   const ISSUE_URL = `${GITHUB_REPO.replace(/\/$/, "")}/issues/new`;
 
   const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
 
+  // D: Theme toggle state (persisted to localStorage)
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem("wifix-theme") || "light";
+  });
+
+  const menuRef = useRef(null);
+  const menuButtonRef = useRef(null);
+
+  // A: Close menu on click outside
   useEffect(() => {
     const onDocClick = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
@@ -18,8 +30,34 @@ const Header = () => {
     return () => document.removeEventListener("click", onDocClick);
   }, []);
 
-  const [showSettings, setShowSettings] = useState(false);
-  const [showAbout, setShowAbout] = useState(false);
+  // A: Escape key handler for menu and modals
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === "Escape") {
+        if (showSettings) {
+          setShowSettings(false);
+          menuButtonRef.current?.focus();
+        } else if (showAbout) {
+          setShowAbout(false);
+          menuButtonRef.current?.focus();
+        } else if (menuOpen) {
+          setMenuOpen(false);
+        }
+      }
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [menuOpen, showSettings, showAbout]);
+
+  // D: Apply theme to document and persist
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    localStorage.setItem("wifix-theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
 
   return (
     <>
@@ -28,9 +66,11 @@ const Header = () => {
         <div ref={menuRef} className="absolute top-3 right-4">
           <div className="relative">
             <button
+              ref={menuButtonRef}
               onClick={() => setMenuOpen((s) => !s)}
-              aria-haspopup="true"
+              aria-haspopup="menu"
               aria-expanded={menuOpen}
+              aria-label="Open menu"
               className="p-2 bg-white/10 hover:bg-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-white transition"
               title="Menu"
             >
@@ -48,28 +88,67 @@ const Header = () => {
             </button>
 
             {menuOpen && (
-              <div className="fixed mt-2 w-52 bg-white text-gray-900 rounded-md shadow-xl right-4 z-50 ring-1 ring-black ring-opacity-5">
+              <div
+                role="menu"
+                aria-label="Menu options"
+                className="fixed mt-2 w-52 bg-white text-gray-900 rounded-md shadow-xl right-4 z-50 ring-1 ring-black ring-opacity-5"
+              >
                 <button
+                  role="menuitem"
                   onClick={() => {
                     setShowSettings(true);
                     setMenuOpen(false);
                   }}
                   className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm hover:bg-gray-100 transition"
                 >
-                  <span className="text-lg">⚙️</span>
+                  {/* B: Settings SVG icon */}
+                  <svg
+                    className="w-5 h-5 flex-shrink-0 text-gray-700"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
                   <span>Settings</span>
                 </button>
                 <button
+                  role="menuitem"
                   onClick={() => {
                     setShowAbout(true);
                     setMenuOpen(false);
                   }}
                   className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm hover:bg-gray-100 border-t transition"
                 >
-                  <span className="text-lg">ℹ️</span>
+                  {/* B: About SVG icon */}
+                  <svg
+                    className="w-5 h-5 flex-shrink-0 text-blue-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
                   <span>About</span>
                 </button>
                 <a
+                  role="menuitem"
                   href={ISSUE_URL}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -92,6 +171,7 @@ const Header = () => {
                   <span className="ml-1">Report Bug/Error</span>
                 </a>
                 <a
+                  role="menuitem"
                   href={GITHUB_REPO}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -124,14 +204,26 @@ const Header = () => {
 
       {/* Settings Modal */}
       {showSettings && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="settings-title"
+        >
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              <h2
+                id="settings-title"
+                className="text-2xl font-bold text-gray-900 dark:text-white"
+              >
                 Settings
               </h2>
               <button
-                onClick={() => setShowSettings(false)}
+                onClick={() => {
+                  setShowSettings(false);
+                  menuButtonRef.current?.focus();
+                }}
+                aria-label="Close settings"
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
                 <svg
@@ -150,13 +242,36 @@ const Header = () => {
               </button>
             </div>
             <div className="space-y-4 text-gray-700 dark:text-gray-300">
-              <p className="text-sm">Settings panel coming soon...</p>
+              {/* D: Theme toggle */}
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div>
+                  <p className="font-medium text-sm">Theme</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    Choose light or dark mode
+                  </p>
+                </div>
+                <button
+                  onClick={toggleTheme}
+                  className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  style={{
+                    backgroundColor: theme === "dark" ? "#3b82f6" : "#d1d5db",
+                  }}
+                  aria-label={`Switch to ${
+                    theme === "dark" ? "light" : "dark"
+                  } mode`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      theme === "dark" ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </div>
               <div className="space-y-2">
                 <p className="text-xs text-gray-600 dark:text-gray-400">
-                  Future options:
+                  More options coming soon:
                 </p>
                 <ul className="list-disc ml-5 text-sm space-y-1">
-                  <li>Theme preference (Dark/Light mode)</li>
                   <li>Network settings</li>
                   <li>File retention period</li>
                   <li>Upload limits</li>
@@ -164,7 +279,10 @@ const Header = () => {
               </div>
             </div>
             <button
-              onClick={() => setShowSettings(false)}
+              onClick={() => {
+                setShowSettings(false);
+                menuButtonRef.current?.focus();
+              }}
               className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition"
             >
               Close
@@ -175,14 +293,26 @@ const Header = () => {
 
       {/* About Modal */}
       {showAbout && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="about-title"
+        >
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+              <h2
+                id="about-title"
+                className="text-2xl font-bold text-gray-900 dark:text-white"
+              >
                 About WifiX
               </h2>
               <button
-                onClick={() => setShowAbout(false)}
+                onClick={() => {
+                  setShowAbout(false);
+                  menuButtonRef.current?.focus();
+                }}
+                aria-label="Close about"
                 className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
               >
                 <svg
@@ -224,7 +354,10 @@ const Header = () => {
               </p>
             </div>
             <button
-              onClick={() => setShowAbout(false)}
+              onClick={() => {
+                setShowAbout(false);
+                menuButtonRef.current?.focus();
+              }}
               className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition"
             >
               Close
