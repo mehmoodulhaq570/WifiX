@@ -1,4 +1,5 @@
 import QRCode from "react-qr-code";
+import { useState } from "react";
 
 const ServerControl = ({
   isHost,
@@ -15,6 +16,9 @@ const ServerControl = ({
     deviceInfo.lan_url ||
     deviceInfo.host_url ||
     `http://${deviceInfo.lan_ip || deviceInfo.ip}:5000`;
+
+  const [testLoading, setTestLoading] = useState(false);
+  const [testResult, setTestResult] = useState(null); // null | { ok: bool, status?: number, msg?: string }
 
   // Disable the "Become Host" button when this client is already connected to a host
   const disableBecomeHost = !isHost && !!isApproved;
@@ -80,7 +84,60 @@ const ServerControl = ({
           >
             📋 Copy
           </button>
+          <button
+            onClick={async () => {
+              setTestLoading(true);
+              setTestResult(null);
+              try {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 5000);
+                const infoUrl = `${shareUrl.replace(/\/$/, "")}/info`;
+                const res = await fetch(infoUrl, { signal: controller.signal });
+                clearTimeout(timeout);
+                if (!res.ok) {
+                  setTestResult({
+                    ok: false,
+                    status: res.status,
+                    msg: res.statusText,
+                  });
+                } else {
+                  const data = await res.json();
+                  setTestResult({
+                    ok: true,
+                    status: res.status,
+                    msg: data.host_url || "OK",
+                  });
+                }
+              } catch (e) {
+                setTestResult({
+                  ok: false,
+                  msg: e.name === "AbortError" ? "timeout" : e.message,
+                });
+              } finally {
+                setTestLoading(false);
+              }
+            }}
+            className="ml-2 bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-2 rounded-md text-sm font-medium transition"
+          >
+            {testLoading ? "Testing..." : "Test connection"}
+          </button>
         </div>
+        {testResult && (
+          <div className="mt-2 text-sm">
+            {testResult.ok ? (
+              <span className="text-green-700">
+                ✅ Reachable — {testResult.msg}
+              </span>
+            ) : (
+              <span className="text-red-700">
+                ❌ Not reachable
+                {testResult.status ? ` (HTTP ${testResult.status})` : ""}
+                {testResult.msg ? ` — ${testResult.msg}` : ""}
+              </span>
+            )}
+          </div>
+        )}
+        {/* Connection help and zeroconf instructions removed per user request */}
       </div>
 
       <div className="flex flex-col items-center gap-2 w-full">
