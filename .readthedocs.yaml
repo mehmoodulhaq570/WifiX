@@ -20,7 +20,3 @@ python:
 # Sphinx configuration
 sphinx:
   configuration: docs/conf.py
-
-# Optional: caching pip packages between builds
-cache:
-  pip: true
