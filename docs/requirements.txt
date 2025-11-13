@@ -1,0 +1,7 @@
+sphinx>=7.0
+sphinx-rtd-theme>=2.0
+myst-parser>=2.0
+sphinxcontrib-httpdomain>=1.8
+sphinx-copybutton>=0.5
+roman>=5.0
+linkify-it-py>=2.0

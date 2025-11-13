@@ -1,0 +1,27 @@
+# Read the Docs configuration file
+# Documentation: https://docs.readthedocs.io/en/stable/config-file/v2.html
+
+version: 2
+
+# Build environment
+build:
+  os: ubuntu-24.04
+  tools:
+    python: "3.13"
+  apt_packages: # Optional: add system packages if needed
+    - graphviz # Example: if using Sphinx graphviz extension
+    # - texlive-latex-base  # Uncomment if you want PDF builds
+
+# Python dependencies
+python:
+  install:
+    - requirements: docs/requirements.txt
+  system_packages: false # Use RTD virtualenv only
+
+# Sphinx configuration
+sphinx:
+  configuration: docs/conf.py
+
+# Optional: caching pip packages between builds
+cache:
+  pip: true
