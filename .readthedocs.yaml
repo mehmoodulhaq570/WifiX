@@ -16,7 +16,6 @@ build:
 python:
   install:
     - requirements: docs/requirements.txt
-  system_packages: false # Use RTD virtualenv only
 
 # Sphinx configuration
 sphinx:
