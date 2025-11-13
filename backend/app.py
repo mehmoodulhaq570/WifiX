@@ -22,6 +22,10 @@ from flask_limiter.util import get_remote_address
 from flask_cors import CORS
 from jinja2 import TemplateNotFound
 
+# Local imports
+from room_codes import get_room_code_manager
+from mdns_service import get_mdns_service
+
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
@@ -95,6 +99,10 @@ HOST_SID = None
 
 # Per-file PIN storage: {filename: pin_code}
 FILE_PINS = {}
+
+# Initialize mDNS service globally
+mdns_service_instance = get_mdns_service()
+room_code_manager_instance = get_room_code_manager()
 
 
 @socketio.on('become_host')
@@ -237,7 +245,112 @@ def info():
     if parsed.port:
         netloc = f"{lan_ip}:{parsed.port}"
     lan_url = urlunparse((parsed.scheme, netloc, parsed.path, parsed.params, parsed.query, parsed.fragment))
-    return jsonify({'host_url': host_url, 'lan_url': lan_url, 'lan_ip': lan_ip})
+    
+    # Get mDNS status
+    mdns_info = mdns_service_instance.get_status()
+    
+    return jsonify({
+        'host_url': host_url,
+        'lan_url': lan_url,
+        'lan_ip': lan_ip,
+        'mdns': mdns_info
+    })
+
+
+# ============================================================================
+# Room Code API Endpoints
+# ============================================================================
+
+@app.route('/api/room-code/generate', methods=['POST'])
+def generate_room_code():
+    """Generate a new room code for the current server.
+    Request body (optional): { name: 'My Room' }
+    Returns: { code: 'ABC123', url: 'http://ip:port', name: 'My Room' }
+    """
+    try:
+        data = request.get_json() or {}
+        room_name = data.get('name')
+        
+        # Get server details
+        lan_ip = _detect_lan_ip()
+        parsed = urlparse(request.host_url)
+        port = parsed.port or (443 if parsed.scheme == 'https' else 80)
+        
+        # Generate code
+        code = room_code_manager_instance.generate_code(lan_ip, port, room_name)
+        
+        details = room_code_manager_instance.get_connection_details(code)
+        
+        logger.info(f"Generated room code: {code} for {lan_ip}:{port}")
+        
+        return jsonify({
+            'success': True,
+            'code': code,
+            'url': details['url'],
+            'name': details['name']
+        }), 201
+        
+    except Exception as e:
+        logger.error(f"Failed to generate room code: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/room-code/<code>', methods=['GET'])
+def lookup_room_code(code):
+    """Look up connection details for a room code.
+    Returns: { ip, port, url, name } or 404 if not found/expired
+    """
+    try:
+        details = room_code_manager_instance.get_connection_details(code)
+        
+        if details is None:
+            return jsonify({'success': False, 'error': 'Code not found or expired'}), 404
+        
+        return jsonify({
+            'success': True,
+            **details
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Failed to lookup room code {code}: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/room-code/<code>', methods=['DELETE'])
+def delete_room_code(code):
+    """Delete a room code.
+    Returns: { success: true } or 404 if not found
+    """
+    try:
+        deleted = room_code_manager_instance.delete_code(code)
+        
+        if not deleted:
+            return jsonify({'success': False, 'error': 'Code not found'}), 404
+        
+        logger.info(f"Deleted room code: {code}")
+        return jsonify({'success': True}), 200
+        
+    except Exception as e:
+        logger.error(f"Failed to delete room code {code}: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@app.route('/api/room-codes', methods=['GET'])
+def list_room_codes():
+    """List all active room codes.
+    Returns: { codes: { 'ABC123': { name, created_at, expires_at }, ... } }
+    """
+    try:
+        codes = room_code_manager_instance.list_active_codes()
+        
+        return jsonify({
+            'success': True,
+            'codes': codes
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"Failed to list room codes: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @app.route('/files', methods=['GET'])
@@ -471,40 +584,36 @@ if __name__ == '__main__':
     print("   1. Open the link above in your browser to become the HOST")
     print("   2. Share the link with others to let them connect as CLIENTS")
     print("   3. As HOST, you'll approve/deny incoming connections")
+    
+    # Start mDNS service
+    mdns_started = False
+    if os.environ.get('ENABLE_MDNS', '1') == '1':
+        service_name = os.environ.get('MDNS_SERVICE_NAME', socket.gethostname())
+        if mdns_service_instance.start(port, lan_ip, service_name):
+            mdns_status = mdns_service_instance.get_status()
+            print("\n🌐 mDNS Service:")
+            print(f"   ✓ Accessible at: {mdns_status['url']}")
+            print(f"   ✓ Service Name: {mdns_status['service_name']}")
+            mdns_started = True
+        else:
+            print("\n⚠️  mDNS Service: Failed to start")
+    
+    print("\n🔑 Room Codes:")
+    print("   ✓ Room code system enabled")
+    print("   ✓ Generate codes via: POST /api/room-code/generate")
+    
     print("\n" + "="*60 + "\n")
 
-    # Optionally advertise via Zeroconf/mDNS on the LAN for auto-discovery
-    zeroconf = None
-    info = None
-    if os.environ.get('ENABLE_ZEROCONF', '1') == '1':
+    def _cleanup_services():
+        """Cleanup mDNS and other services on shutdown."""
+        global mdns_service_instance
         try:
-            from zeroconf import ServiceInfo, Zeroconf
-            svc_name = f"WifiX on {lan_ip}._wifi-share._tcp.local."  # visible name in mDNS browsers
-            # simple text record
-            desc = {'path': '/'}
-            info = ServiceInfo(
-                "_wifi-share._tcp.local.",
-                svc_name,
-                addresses=[socket.inet_aton(lan_ip)],
-                port=port,
-                properties=desc,
-                server=(socket.gethostname() + '.local.')
-            )
-            zeroconf = Zeroconf()
-            zeroconf.register_service(info)
-            logger.info(f"Zeroconf: registered service {svc_name}")
+            if mdns_started:
+                mdns_service_instance.stop()
+                logger.info('mDNS: service stopped')
         except Exception as e:
-            logger.warning(f"Zeroconf registration failed: {e}")
+            logger.error(f'Error stopping mDNS: {e}')
 
-    def _cleanup_zeroconf():
-        try:
-            if zeroconf and info:
-                zeroconf.unregister_service(info)
-                zeroconf.close()
-                logger.info('Zeroconf: service unregistered')
-        except Exception:
-            pass
-
-    atexit.register(_cleanup_zeroconf)
+    atexit.register(_cleanup_services)
 
     socketio.run(app, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True)

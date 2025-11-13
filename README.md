@@ -4,6 +4,8 @@ WifiX is a local area network (LAN) file sharing application built with Flask ba
 
 ## Features
 
+- 🔑 **Room Codes**: Generate short, memorable codes (e.g., ABC123) for easy connection without IP addresses
+- 🌐 **mDNS Discovery**: Automatic network discovery using human-readable hostnames (e.g., mydevice.local)
 - 🔐 **Host/Client Approval Flow**: Host must approve client connections before file access
 - 📁 **File Upload & Download**: Drag-and-drop file uploads with progress tracking
 - 📱 **QR Code Generation**: Generate QR codes for easy mobile access
@@ -14,6 +16,28 @@ WifiX is a local area network (LAN) file sharing application built with Flask ba
 - 📊 **File Persistence**: Files persist until explicitly deleted by user
 - 🗑️ **Delete Confirmation**: Modal confirmation before file deletion
 - 📈 **Upload Progress**: Real-time upload progress indication
+
+### 🆕 Easy Connection Methods
+
+WifiX now supports two innovative ways to connect without memorizing IP addresses:
+
+#### Room Codes
+
+Share a short code (like `ABC123`) instead of an IP address. Perfect for:
+
+- Quick meetings and presentations
+- Temporary file sharing
+- Easy verbal communication
+- See [Easy Connection Guide](docs/EASY_CONNECTION_GUIDE.md) for details
+
+#### mDNS Discovery
+
+Access servers using friendly names like `mydevice.local`. Features:
+
+- Zero configuration
+- Automatic network discovery
+- Works across all major platforms
+- See [Easy Connection Guide](docs/EASY_CONNECTION_GUIDE.md) for setup
 
 ## Tech Stack
 

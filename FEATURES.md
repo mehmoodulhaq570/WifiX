@@ -4,7 +4,66 @@ This document describes all the features implemented in WifiX, a modern file-sha
 
 ## Recent Features (Latest Release)
 
-### 1. Onboarding Tour for First-Time Users
+### 1. Easy Connection Methods (Room Codes & mDNS)
+
+#### Room Codes
+
+- **Components**: `RoomCodeGenerator.jsx`, `RoomCodeConnect.jsx`, `ConnectionHub.jsx`
+- **Backend**: `room_codes.py`, API endpoints in `app.py`
+- **Description**: Generate short, memorable codes that map to server IP addresses
+- **Features**:
+  - **Code Generation**:
+    - 6-character alphanumeric codes (e.g., ABC123)
+    - Excludes confusing characters (O/0, I/1)
+    - Optional custom room names
+    - Automatic expiration (default: 60 minutes)
+  - **Code Usage**:
+    - Simple input interface for clients
+    - Automatic connection lookup
+    - Case-insensitive code entry
+  - **API Endpoints**:
+    - `POST /api/room-code/generate` - Create new room code
+    - `GET /api/room-code/<code>` - Lookup connection details
+    - `DELETE /api/room-code/<code>` - Delete room code
+    - `GET /api/room-codes` - List all active codes
+- **Benefits**:
+  - No need to remember IP addresses
+  - Easy to share verbally or in messages
+  - Automatic security through expiration
+  - Perfect for quick connections in meetings
+
+#### mDNS (Multicast DNS) Discovery
+
+- **Component**: `MDNSDiscovery.jsx`
+- **Backend**: `mdns_service.py`, enhanced Zeroconf implementation
+- **Description**: Automatic network discovery using human-readable hostnames
+- **Features**:
+  - **Automatic Advertisement**:
+    - Registers service on local network
+    - Creates `.local` hostname (e.g., `mydevice.local`)
+    - Service type: `_wifix._tcp.local.`
+  - **Discovery Interface**:
+    - Shows current hostname and URL
+    - Real-time status indicator
+    - Copy hostname and URL buttons
+    - Service information display
+  - **Configuration**:
+    - Enable/disable via `ENABLE_MDNS` environment variable
+    - Custom service name via `MDNS_SERVICE_NAME`
+    - Works on same local network
+- **Benefits**:
+  - Zero configuration required
+  - Human-readable names
+  - Automatic discovery
+  - Works across different devices and platforms
+- **Compatibility**:
+  - ✓ macOS (native support)
+  - ✓ iOS (native support)
+  - ✓ Linux (Avahi/systemd-resolved)
+  - ✓ Windows (Bonjour or native support)
+  - ✓ Android (via app libraries)
+
+### 2. Onboarding Tour for First-Time Users
 
 - **Component**: `OnboardingTour.jsx`
 - **Description**: Interactive guided tour that appears on first visit

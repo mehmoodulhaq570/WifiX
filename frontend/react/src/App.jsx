@@ -13,6 +13,8 @@ import ConnectionApprovalModal from "./components/ConnectionApprovalModal";
 import ConnectionStatus from "./components/ConnectionStatus";
 import UploadErrorModal from "./components/UploadErrorModal";
 import SetPinModal from "./components/SetPinModal";
+import RoomCodeGenerator from "./components/RoomCodeGenerator";
+import MDNSDiscovery from "./components/MDNSDiscovery";
 
 // Hooks
 import { useSocket } from "./hooks/useSocket";
@@ -395,17 +397,8 @@ function App() {
 
       console.log("Upload result:", result);
       if (result.success) {
-        setFiles((prev) => [
-          {
-            name: result.filename,
-            url: result.url,
-            size: result.size,
-            mtime: Date.now(),
-            type: result.type,
-            has_pin: result.has_pin || false,
-          },
-          ...prev,
-        ]);
+        // Don't add to files list here - let the socket event handle it to avoid duplicates
+        // The socket event (file_uploaded) will add it for all connected clients including the uploader
         if (result.url) {
           setQrUrl(result.url);
           const pinMsg = result.has_pin ? " (PIN protected)" : "";
@@ -638,6 +631,23 @@ function App() {
                   setPinProtectionEnabled(!pinProtectionEnabled)
                 }
               />
+            </div>
+
+            {/* Easy Connection Methods */}
+            <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Room Code Generator - Show only for hosts */}
+              {isHost && (
+                <RoomCodeGenerator
+                  serverUrl={(
+                    deviceInfo.lan_url ||
+                    deviceInfo.host_url ||
+                    `http://${deviceInfo.lan_ip || deviceInfo.ip}:5000`
+                  ).replace(/\/$/, "")}
+                />
+              )}
+
+              {/* mDNS Discovery - Show always */}
+              <MDNSDiscovery serverInfo={deviceInfo} />
             </div>
 
             <FileList
