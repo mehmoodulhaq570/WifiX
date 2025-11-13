@@ -1,39 +1,108 @@
-# WifiX — LAN File Sharing Application
+<div align="center">
 
-WifiX is a local area network (LAN) file sharing application built with Flask backend and React frontend. It enables easy file sharing between devices on the same network with features like QR code generation, PIN authentication, host/client approval flow, and real-time updates.
+# 📡 WifiX
 
-## Features
+**Easy LAN File Sharing Made Simple**
 
-- 🔐 **Host/Client Approval Flow**: Host must approve client connections before file access
-- 📁 **File Upload & Download**: Drag-and-drop file uploads with progress tracking
-- 📱 **QR Code Generation**: Generate QR codes for easy mobile access
-- 🔑 **PIN Authentication**: Optional PIN protection for file access
-- 🔄 **Real-time Updates**: WebSocket-based live file list updates
-- 🌙 **Dark Mode**: Toggle between light and dark themes
-- ⚡ **Rate Limiting**: Built-in protection against abuse
-- 📊 **File Persistence**: Files persist until explicitly deleted by user
-- 🗑️ **Delete Confirmation**: Modal confirmation before file deletion
-- 📈 **Upload Progress**: Real-time upload progress indication
+[![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB.svg)](https://react.dev/)
+[![Flask](https://img.shields.io/badge/Flask-2.3.2-000000.svg)](https://flask.palletsprojects.com/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
-## Tech Stack
+Share files seamlessly across your local network with drag-and-drop simplicity, QR code access, and real-time updates.
 
-### Backend
+[Features](#-features) • [Quick Start](#-quick-start) • [Documentation](#-documentation) • [Contributing](#-contributing)
 
-- **Flask** - Web framework
-- **Flask-SocketIO** - WebSocket support for real-time communication
-- **Flask-Limiter** - Rate limiting middleware
-- **qrcode** - QR code generation
-- **Werkzeug** - Secure filename handling
+</div>
 
-### Frontend
+---
 
-- **React 19** - UI framework
-- **Vite** - Build tool and dev server
-- **Socket.IO Client** - WebSocket client
-- **Axios** - HTTP client
-- **Tailwind CSS** - Utility-first CSS framework
-- **DaisyUI** - Tailwind component library
-- **react-qr-code** - QR code rendering
+## ✨ Features
+
+### Core Functionality
+
+- 📁 **Drag & Drop Uploads** - Intuitive file upload with progress tracking
+- ⬇️ **Instant Downloads** - Quick file retrieval from any connected device
+- 📱 **QR Code Access** - Scan to connect from mobile devices instantly
+- 🔄 **Real-Time Sync** - WebSocket-powered live updates across all clients
+
+### Security & Control
+
+- 🔐 **Host/Client Approval** - Host authorizes all client connections
+- 🔑 **PIN Protection** - Global and per-file PIN authentication
+- 🔒 **Secure Filenames** - Automatic sanitization prevents path traversal
+- 🛡️ **Rate Limiting** - Built-in protection against abuse
+
+### User Experience
+
+- 🌙 **Dark Mode** - Toggle between light and dark themes
+- 🗑️ **Safe Deletion** - Confirmation modals prevent accidental removals
+- 📈 **Upload Progress** - Real-time feedback during file transfers
+- 💾 **File Persistence** - Files remain until explicitly deleted
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Python 3.8 or higher
+- Node.js 16 or higher
+- npm or yarn
+
+### Installation
+
+```powershell
+# Clone repository
+git clone https://github.com/yourusername/WifiX.git
+cd WifiX
+
+# Backend setup
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r backend/requirements.txt
+
+# Frontend setup
+cd frontend\react
+npm install
+```
+
+### Running the Application
+
+**Terminal 1 - Backend:**
+
+```powershell
+python backend/app.py
+# Server runs on http://localhost:5000
+```
+
+**Terminal 2 - Frontend:**
+
+```powershell
+cd frontend\react
+npm run dev
+# Development server on http://localhost:5173
+```
+
+### Access
+
+- **Host Dashboard:** `http://localhost:5173`
+- **Client Access:** Scan QR code or use displayed IP address
+- **Mobile:** Scan QR code from any mobile device on same network
+
+## 🛠️ Tech Stack
+
+| Layer             | Technology             | Purpose                 |
+| ----------------- | ---------------------- | ----------------------- |
+| **Backend**       | Flask 2.3.2            | Web framework           |
+|                   | Flask-SocketIO         | WebSocket support       |
+|                   | Flask-Limiter          | Rate limiting           |
+|                   | Werkzeug               | Security utilities      |
+| **Frontend**      | React 19               | UI framework            |
+|                   | Vite                   | Build tool & dev server |
+|                   | Tailwind CSS + DaisyUI | Styling                 |
+|                   | Socket.IO Client       | Real-time communication |
+| **Communication** | WebSocket              | Live updates            |
+|                   | REST API               | File operations         |
 
 ## Project Structure
 
@@ -135,167 +204,184 @@ Note: uploaded files are now stored in `backend/uploads/`. During the migration 
    ```
    Frontend will start on `http://localhost:5173` (or 5174 if 5173 is in use)
 
-## Usage
+## 📖 Documentation
 
-### Quick Start
+Comprehensive documentation is available in the `docs/` folder:
 
-1. **Start the Flask backend**:
+- **[Features Guide](docs/FEATURES.md)** - Detailed feature documentation
+- **[Usage Guide](docs/USAGE.md)** - How to use WifiX
+- **[API Documentation](docs/API.md)** - REST & WebSocket API reference
+- **[Architecture](docs/ARCHITECTURE.md)** - System design and architecture
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
+- **[Contributing Guide](CONTRIBUTING.md)** - How to contribute
+- **[Changelog](CHANGELOG.md)** - Version history
+- **[Security Policy](SECURITY.md)** - Security guidelines
 
-   ```powershell
-   python backend/app.py
-   ```
+## 📋 Project Structure
 
-   You'll see a banner with the shareable link:
+```
+WifiX/
+├── backend/
+│   ├── app.py                   # Flask application
+│   ├── requirements.txt         # Python dependencies
+│   └── uploads/                 # File storage (gitignored)
+├── frontend/
+│   └── react/
+│       ├── src/
+│       │   ├── components/      # React components
+│       │   ├── hooks/           # Custom hooks
+│       │   ├── utils/           # Utility functions
+│       │   ├── App.jsx          # Main app component
+│       │   └── main.jsx         # Entry point
+│       ├── package.json         # Node dependencies
+│       └── vite.config.js       # Vite configuration
+├── docs/                        # Documentation
+│   ├── INDEX.md                 # Documentation index
+│   ├── ARCHITECTURE.md          # System architecture
+│   ├── TROUBLESHOOTING.md       # Problem solving
+│   └── USAGE.md                 # Usage guide
+├── CONTRIBUTING.md              # Contribution guidelines
+├── CHANGELOG.md                 # Version history
+├── SECURITY.md                  # Security policies
+├── API.md                       # API documentation
+├── LICENSE                      # MIT License
+└── README.md                    # This file
+```
 
-   ```
-   ============================================================
-   🚀 WifiX Server Started Successfully!
-   ============================================================
+## ⚙️ Configuration
 
-   📡 Server is running on:
-      Local:   http://127.0.0.1:5000
-      Network: http://192.168.1.5:5000
+### Environment Variables
 
-   🔗 Share this link with others:
-      👉 http://192.168.1.5:5000
+**Backend (`backend/.env` or system):**
 
-   💡 Instructions:
-      1. Open the link above in your browser to become the HOST
-      2. Share the link with others to let them connect as CLIENTS
-      3. As HOST, you'll approve/deny incoming connections
-   ============================================================
-   ```
+```bash
+ACCESS_PIN=1234                    # Optional: Enable PIN authentication
+SECRET_KEY=your-secret-key-here    # Session encryption (auto-generated if not set)
+CORS_ORIGINS=http://localhost:5173 # Allowed origins (comma-separated)
+FILE_TTL_SECONDS=0                 # File auto-cleanup (0=disabled)
+CLEANUP_INTERVAL_SECONDS=60        # Cleanup check interval
+```
 
-2. **Start the Vite dev server** (for development):
+**Frontend (`frontend/react/.env`):**
 
-   ```powershell
-   cd frontend\react
-   npm run dev
-   ```
+```bash
+VITE_API_URL=http://localhost:5000  # Backend API URL
+```
 
-3. **Open the Network URL** in your browser (e.g., `http://192.168.1.5:5000`)
+### File Upload Limits
 
-### Host Workflow
+Modify in `backend/app.py`:
 
-1. **Open the shareable link** in your browser
-2. **Click "🏠 Become Host"** to enable hosting
-3. **Upload Files**: Drag and drop files or use the upload button
-4. **Approve Clients**: Accept incoming connection requests from clients
-5. **Share Link**: Use the "📋 Copy" button or "Show QR Code" for easy sharing
-6. **Manage Files**: Delete files when no longer needed
-7. **Stop Hosting**: Click "🛑 Stop Hosting" to end the session
+```python
+app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 1024  # 1GB default
+```
 
-### Client Workflow
+## 🔒 Security
 
-1. **Get the link** from the host (e.g., `http://192.168.1.5:5000`)
-2. **Open it in your browser**
-3. **Click "👥 Connect as Client"** to request access
-4. **Wait for host approval** (host will see a popup)
-5. **Browse and download** available files once approved
+WifiX includes multiple security layers:
 
-### Key Concepts
+- **Host Approval** - All client connections require host authorization
+- **PIN Authentication** - Optional global and per-file PIN protection
+- **Rate Limiting** - Prevents abuse (10 uploads/min, 20 deletes/min)
+- **Secure Filenames** - Automatic sanitization prevents path traversal
+- **Session Management** - Secure, HTTP-only cookies
+- **CORS Protection** - Configurable origin restrictions
 
-- **Server**: The Flask backend running on your machine
-- **Host**: The person who clicks "Become Host" - controls file sharing
-- **Client**: Anyone who connects as a client - can only view/download files
+For security issues, see [SECURITY.md](SECURITY.md).
 
-See [USAGE.md](USAGE.md) for detailed usage instructions and troubleshooting.
+## 📊 API Reference
 
-## API Endpoints
+### REST Endpoints
 
-### File Operations
+| Method   | Endpoint                   | Description    | Rate Limit |
+| -------- | -------------------------- | -------------- | ---------- |
+| `GET`    | `/api/files`               | List all files | -          |
+| `POST`   | `/api/upload`              | Upload file    | 10/min     |
+| `DELETE` | `/api/delete/<filename>`   | Delete file    | 20/min     |
+| `GET`    | `/api/download/<filename>` | Download file  | -          |
+| `GET`    | `/api/info`                | Server info    | -          |
 
-- `GET /files` - List all available files
-- `POST /upload` - Upload a new file (rate limited: 10/min)
-- `GET /download/<filename>` - Download a file
-- `DELETE /delete/<filename>` - Delete a file (rate limited: 20/min)
+### WebSocket Events
 
-### Server Info
+**Client → Server:**
 
-- `GET /info` - Get server connection information (host URL, LAN IP, etc.)
-- `GET /qr` - Generate QR code for a URL
+- `become_host` - Register as host
+- `stop_host` - Stop hosting
+- `request_connect` - Request connection
+- `approve_request` - Approve client (host only)
+- `deny_request` - Deny client (host only)
 
-### Authentication
+**Server → Client:**
 
-- `POST /auth` - Authenticate with PIN (if enabled)
-- `GET /auth/status` - Check authentication status
+- `file_uploaded` - New file available
+- `file_deleted` - File removed
+- `incoming_request` - Connection request (host)
+- `request_approved` - Connection approved
+- `request_denied` - Connection denied
 
-## WebSocket Events
+See [API.md](API.md) for complete documentation.
 
-### Client → Server
+## 🛠️ Development
 
-- `become_host` - Register as the host
-- `stop_host` - Unregister as host
-- `request_connect` - Request connection to host
-- `approve_request` - Approve a client request (host only)
-- `deny_request` - Deny a client request (host only)
+### Prerequisites
 
-### Server → Client
+- Python 3.8+
+- Node.js 16+
+- Git
 
-- `host_status` - Host availability status
-- `incoming_request` - New connection request (to host)
-- `request_approved` - Connection request approved
-- `request_denied` - Connection request denied
-- `file_uploaded` - File uploaded notification
-- `file_deleted` - File deleted notification
-
-## Configuration
-
-### Backend Environment Variables
-
-| Variable                   | Default             | Description                                  |
-| -------------------------- | ------------------- | -------------------------------------------- |
-| `ACCESS_PIN`               | None                | Enable PIN authentication (set to PIN value) |
-| `CORS_ORIGINS`             | localhost:5173,5174 | Allowed frontend origins                     |
-| `FILE_TTL_SECONDS`         | 0                   | Auto-cleanup interval (0 = disabled)         |
-| `CLEANUP_INTERVAL_SECONDS` | 60                  | Cleanup check interval                       |
-| `SECRET_KEY`               | Random              | Session encryption key                       |
-
-### Frontend Environment Variables
-
-| Variable       | Default               | Description          |
-| -------------- | --------------------- | -------------------- |
-| `VITE_API_URL` | http://localhost:5000 | Backend API base URL |
-
-## Security Features
-
-- **Rate Limiting**: Upload (10/min), Delete (20/min), Global (200/day, 50/hour)
-- **Environment-based CORS**: Configurable allowed origins
-- **Secure Filename Handling**: Uses werkzeug's secure_filename
-- **PIN Authentication**: Optional PIN protection for file access
-- **Host Approval Flow**: Clients must be approved by host
-- **Logging**: Comprehensive logging for debugging and monitoring
-
-## Development
-
-### Run Backend in Development
+### Setup Development Environment
 
 ```powershell
+# Clone repository
+git clone https://github.com/yourusername/WifiX.git
+cd WifiX
+
+# Backend
+python -m venv .venv
 .\.venv\Scripts\Activate.ps1
+pip install -r backend/requirements.txt
+
+# Frontend
+cd frontend\react
+npm install
+```
+
+### Running Development Servers
+
+**Terminal 1 - Backend (with auto-reload):**
+
+```powershell
+$env:FLASK_ENV="development"
 python backend/app.py
 ```
 
-### Run Frontend in Development
+**Terminal 2 - Frontend (with HMR):**
 
 ```powershell
 cd frontend\react
 npm run dev
 ```
 
-### Build Frontend for Production
+### Building for Production
 
 ```powershell
 cd frontend\react
 npm run build
-npm run preview  # Preview production build
+# Build output in dist/ folder
 ```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
+npm run build
+npm run preview # Preview production build
+
+````
 
 ### Lint Frontend Code
 
 ```powershell
 cd frontend\react
 npm run lint
-```
+````
 
 ## Improvements Implemented
 
@@ -325,31 +411,120 @@ npm run lint
 - [ ] Folder support
 - [ ] Download all as ZIP
 
-## Troubleshooting
+## 🐛 Troubleshooting
 
-### Port Already in Use
+For detailed troubleshooting, see [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
 
-If port 5173 is in use, Vite will auto-select 5174. Update `CORS_ORIGINS` in backend if needed.
+### Common Issues
 
-### Socket.IO Connection Errors
+**Port Already in Use:**
 
-Ensure `CORS_ORIGINS` environment variable includes your frontend dev server URL.
+- Vite auto-selects next available port (5174, 5175...)
+- Update `CORS_ORIGINS` in backend if needed
 
-### Upload Failures
+**Socket.IO Connection Errors:**
 
-- Check file size (max 100MB by default)
-- Verify rate limits haven't been exceeded
-- Check backend logs for detailed error messages
+- Ensure `CORS_ORIGINS` includes frontend dev server URL
+- Check firewall/antivirus settings
+- Verify backend is running
 
-### Files Not Showing
+**Upload Failures:**
 
-- Verify you're authenticated (if PIN is enabled)
-- Check that you're approved by the host (if connecting as client)
-- Reload the file list using the browser refresh
+- Check file size limit (1GB default)
+- Verify rate limits (10 uploads/min)
+- Check backend logs for errors
 
-## License
+**Files Not Showing:**
 
-MIT
+- Verify PIN authentication (if enabled)
+- Check host approval (if client)
+- Refresh browser or reconnect
+
+## 🤝 Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for:
+
+- Code of Conduct
+- Development setup
+- Coding standards
+- Pull request process
+- Issue guidelines
+
+Quick contribution steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🗺️ Roadmap
+
+### Version 1.0.0 (Current)
+
+- ✅ Core file sharing functionality
+- ✅ Host/Client approval system
+- ✅ PIN authentication
+- ✅ QR code generation
+- ✅ Real-time updates via WebSocket
+- ✅ Dark mode support
+- ✅ Rate limiting
+
+### Version 1.1.0 (Planned)
+
+- [ ] Docker support
+- [ ] Database integration (SQLite/PostgreSQL)
+- [ ] File search and filtering
+- [ ] Batch file operations
+- [ ] Enhanced mobile UI
+
+### Future Versions
+
+- [ ] TypeScript migration
+- [ ] Unit and integration tests
+- [ ] Folder upload/download
+- [ ] ZIP archive creation
+- [ ] HTTPS/SSL by default
+- [ ] Multi-language support
+- [ ] Room codes for easy connections
+- [ ] mDNS discovery
+
+See [CHANGELOG.md](CHANGELOG.md) for version history and [GitHub Issues](https://github.com/yourusername/WifiX/issues) for tracking.
+
+## 🙏 Acknowledgments
+
+Built with amazing open-source tools:
+
+- [Flask](https://flask.palletsprojects.com/) - Web framework
+- [React](https://react.dev/) - UI library
+- [Vite](https://vitejs.dev/) - Build tool
+- [Tailwind CSS](https://tailwindcss.com/) - Styling framework
+- [DaisyUI](https://daisyui.com/) - Component library
+- [Socket.IO](https://socket.io/) - Real-time communication
+- [Lucide](https://lucide.dev/) - Icon library
+
+## 📞 Support & Community
+
+- 📚 **Documentation:** Browse [docs/](docs/) folder
+- 🐛 **Issues:** Report bugs on [GitHub Issues](https://github.com/yourusername/WifiX/issues)
+- 💬 **Discussions:** Join [GitHub Discussions](https://github.com/yourusername/WifiX/discussions)
+- 🔒 **Security:** Report vulnerabilities via [SECURITY.md](SECURITY.md)
+
+---
+
+<div align="center">
+
+**Made with ❤️ for easy local file sharing**
+
+If you find WifiX useful, please ⭐ star this repository!
+
+[Report Bug](https://github.com/yourusername/WifiX/issues) · [Request Feature](https://github.com/yourusername/WifiX/issues) · [Documentation](docs/)
+
+</div>
 
 ## Contributing
 
