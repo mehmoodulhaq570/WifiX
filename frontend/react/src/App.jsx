@@ -14,7 +14,6 @@ import ConnectionApprovalModal from "./components/ConnectionApprovalModal";
 import ConnectionStatus from "./components/ConnectionStatus";
 import UploadErrorModal from "./components/UploadErrorModal";
 import SetPinModal from "./components/SetPinModal";
-import UsageDashboard from "./components/UsageDashboard";
 
 // Hooks
 import { useSocket } from "./hooks/useSocket";
@@ -602,7 +601,7 @@ function App() {
           },
         }}
       />
-      <Header />
+      <Header files={files} uploadingFiles={uploadingFiles} />
 
       <main
         className={`transition-colors duration-300 ${
@@ -646,8 +645,6 @@ function App() {
                 }
               />
             </div>
-
-            <UsageDashboard files={files} uploadingFiles={uploadingFiles} />
 
             <FileList
               files={files}

@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import BugReportModal from "./BugReportModal";
+import UsageDashboard from "./UsageDashboard";
 
-const Header = () => {
+const Header = ({ files = [], uploadingFiles = {} }) => {
   // C: Config-driven URLs from environment variables
   const GITHUB_REPO =
     import.meta.env.VITE_GITHUB_REPO ||
@@ -12,6 +13,7 @@ const Header = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showBugReport, setShowBugReport] = useState(false); // C: Bug report modal
+  const [showUsageDashboard, setShowUsageDashboard] = useState(false); // Usage dashboard modal
 
   // D: Theme toggle state (persisted to localStorage)
   const [theme, setTheme] = useState(() => {
@@ -45,6 +47,9 @@ const Header = () => {
         } else if (showBugReport) {
           setShowBugReport(false);
           menuButtonRef.current?.focus();
+        } else if (showUsageDashboard) {
+          setShowUsageDashboard(false);
+          menuButtonRef.current?.focus();
         } else if (menuOpen) {
           setMenuOpen(false);
         }
@@ -52,7 +57,7 @@ const Header = () => {
     };
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
-  }, [menuOpen, showSettings, showAbout, showBugReport]);
+  }, [menuOpen, showSettings, showAbout, showBugReport, showUsageDashboard]);
 
   // D: Apply theme to document and persist
   useEffect(() => {
@@ -151,6 +156,29 @@ const Header = () => {
                     />
                   </svg>
                   <span>About</span>
+                </button>
+                <button
+                  role="menuitem"
+                  onClick={() => {
+                    setShowUsageDashboard(true);
+                    setMenuOpen(false);
+                  }}
+                  className="flex items-center gap-2 w-full text-left px-4 py-3 text-sm hover:bg-gray-100 border-t transition"
+                >
+                  <svg
+                    className="w-5 h-5 text-purple-600 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                    />
+                  </svg>
+                  <span className="ml-1">Usage & Statistics</span>
                 </button>
                 <button
                   role="menuitem"
@@ -367,6 +395,60 @@ const Header = () => {
             >
               Close
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Usage Dashboard Modal */}
+      {showUsageDashboard && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowUsageDashboard(false)}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between rounded-t-2xl z-10">
+              <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                <svg
+                  className="w-6 h-6 text-purple-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  />
+                </svg>
+                Usage & Statistics
+              </h2>
+              <button
+                onClick={() => setShowUsageDashboard(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                aria-label="Close usage dashboard"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6">
+              <UsageDashboard files={files} uploadingFiles={uploadingFiles} />
+            </div>
           </div>
         </div>
       )}
