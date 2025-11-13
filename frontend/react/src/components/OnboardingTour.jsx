@@ -142,7 +142,7 @@ const OnboardingTour = ({ onComplete }) => {
         }`}
         style={!isCentered ? tooltipStyle : {}}
       >
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-md w-[90vw] sm:w-96">
+        <div className="bg-white dark:bg-slate-900 rounded-lg shadow-2xl p-6 max-w-md w-[90vw] sm:w-96">
           {/* Progress indicator */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex gap-1.5">
@@ -161,7 +161,7 @@ const OnboardingTour = ({ onComplete }) => {
             </div>
             <button
               onClick={handleSkip}
-              className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+              className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
             >
               Skip
             </button>
@@ -171,7 +171,7 @@ const OnboardingTour = ({ onComplete }) => {
           <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
             {step.title}
           </h3>
-          <p className="text-gray-600 dark:text-gray-300 text-sm mb-6">
+          <p className="text-slate-600 dark:text-slate-200 text-sm mb-6">
             {step.description}
           </p>
 
@@ -180,7 +180,7 @@ const OnboardingTour = ({ onComplete }) => {
             {currentStep > 0 && currentStep < steps.length - 1 && (
               <button
                 onClick={() => setCurrentStep(currentStep - 1)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition"
+                className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-md transition"
               >
                 Back
               </button>
@@ -194,7 +194,7 @@ const OnboardingTour = ({ onComplete }) => {
           </div>
 
           {/* Step counter */}
-          <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-3">
+          <p className="text-center text-xs text-slate-500 dark:text-slate-400 mt-3">
             Step {currentStep + 1} of {steps.length}
           </p>
         </div>

@@ -128,7 +128,7 @@ const FileUploadZone = ({
   return (
     <section
       data-tour="upload-zone"
-      className="col-span-2 bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 flex flex-col"
+      className="col-span-2 bg-white dark:bg-slate-900 rounded-2xl shadow-md dark:shadow-blue-900/20 p-6 flex flex-col border-0 dark:border dark:border-slate-800"
     >
       <h2 className="text-lg md:text-xl font-bold text-blue-600 mb-4 border-b pb-2">
         Upload Files
@@ -136,7 +136,7 @@ const FileUploadZone = ({
 
       {/* Clipboard hint */}
       <div className="mb-3 text-center">
-        <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center justify-center gap-2">
+        <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2">
           <svg
             className="w-4 h-4"
             fill="none"
@@ -151,7 +151,7 @@ const FileUploadZone = ({
             />
           </svg>
           💡 Tip: Press{" "}
-          <kbd className="px-2 py-0.5 text-xs font-semibold bg-gray-200 dark:bg-gray-700 rounded">
+          <kbd className="px-2 py-0.5 text-xs font-semibold bg-gray-200 dark:bg-slate-800 rounded">
             Ctrl+V
           </kbd>{" "}
           to paste screenshots
@@ -188,7 +188,7 @@ const FileUploadZone = ({
                 {selectedFiles.map((file, idx) => (
                   <p
                     key={idx}
-                    className="text-sm text-gray-700 dark:text-gray-300 break-all"
+                    className="text-sm text-slate-700 dark:text-slate-200 break-all"
                   >
                     {idx + 1}. {file.name} ({(file.size / 1024).toFixed(2)} KB)
                   </p>
@@ -223,11 +223,11 @@ const FileUploadZone = ({
             id="pinProtection"
             checked={pinProtectionEnabled}
             onChange={onTogglePinProtection}
-            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 cursor-pointer"
+            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-slate-800 dark:border-slate-600 cursor-pointer"
           />
           <label
             htmlFor="pinProtection"
-            className="text-gray-700 dark:text-gray-300 cursor-pointer select-none"
+            className="text-slate-700 dark:text-slate-200 cursor-pointer select-none"
           >
             🔒 Enable PIN Protection
           </label>

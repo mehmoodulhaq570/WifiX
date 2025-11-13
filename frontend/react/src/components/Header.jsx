@@ -113,7 +113,7 @@ const Header = ({ files = [], uploadingFiles = {} }) => {
                 >
                   {/* B: Settings SVG icon */}
                   <svg
-                    className="w-5 h-5 flex-shrink-0 text-gray-700"
+                    className="w-5 h-5 flex-shrink-0 text-slate-700 dark:text-slate-200"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -243,7 +243,7 @@ const Header = ({ files = [], uploadingFiles = {} }) => {
           aria-modal="true"
           aria-labelledby="settings-title"
         >
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl max-w-md w-full p-6">
             <div className="flex justify-between items-center mb-4">
               <h2
                 id="settings-title"
@@ -257,7 +257,7 @@ const Header = ({ files = [], uploadingFiles = {} }) => {
                   menuButtonRef.current?.focus();
                 }}
                 aria-label="Close settings"
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
               >
                 <svg
                   className="w-6 h-6"
@@ -274,34 +274,83 @@ const Header = ({ files = [], uploadingFiles = {} }) => {
                 </svg>
               </button>
             </div>
-            <div className="space-y-4 text-gray-700 dark:text-gray-300">
+            <div className="space-y-4 text-gray-800 dark:text-gray-100">
               {/* D: Theme toggle */}
-              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <div>
-                  <p className="font-medium text-sm">Theme</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">
-                    Choose light or dark mode
-                  </p>
+              <div className="flex items-center justify-between p-5 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-700 rounded-xl shadow-sm border border-blue-100 dark:border-slate-600">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white dark:bg-slate-900 rounded-lg shadow-sm">
+                    {theme === "dark" ? (
+                      <svg
+                        className="w-5 h-5 text-blue-500"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                      </svg>
+                    ) : (
+                      <svg
+                        className="w-5 h-5 text-amber-500"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-base text-gray-900 dark:text-white">
+                      Appearance
+                    </p>
+                    <p className="text-xs text-slate-600 dark:text-slate-200">
+                      {theme === "dark" ? "Dark" : "Light"} mode
+                    </p>
+                  </div>
                 </div>
                 <button
                   onClick={toggleTheme}
-                  className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  className="relative inline-flex h-8 w-16 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-500/30 shadow-lg"
                   style={{
-                    backgroundColor: theme === "dark" ? "#3b82f6" : "#d1d5db",
+                    backgroundColor: theme === "dark" ? "#3b82f6" : "#f59e0b",
                   }}
                   aria-label={`Switch to ${
                     theme === "dark" ? "light" : "dark"
                   } mode`}
                 >
                   <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      theme === "dark" ? "translate-x-6" : "translate-x-1"
+                    className={`inline-flex items-center justify-center h-7 w-7 transform rounded-full bg-white transition-all duration-300 shadow-md ${
+                      theme === "dark" ? "translate-x-8" : "translate-x-0.5"
                     }`}
-                  />
+                  >
+                    {theme === "dark" ? (
+                      <svg
+                        className="w-4 h-4 text-blue-600"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                      </svg>
+                    ) : (
+                      <svg
+                        className="w-4 h-4 text-amber-500"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    )}
+                  </span>
                 </button>
               </div>
               <div className="space-y-2">
-                <p className="text-xs text-gray-600 dark:text-gray-400">
+                <p className="text-xs text-slate-600 dark:text-slate-300">
                   More options coming soon:
                 </p>
                 <ul className="list-disc ml-5 text-sm space-y-1">
@@ -327,12 +376,12 @@ const Header = ({ files = [], uploadingFiles = {} }) => {
       {/* About Modal */}
       {showAbout && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black dark:bg-opacity-70 flex items-center justify-center z-50 p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="about-title"
         >
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl dark:shadow-blue-900/30 max-w-md w-full p-6 border-0 dark:border dark:border-slate-700">
             <div className="flex justify-between items-center mb-4">
               <h2
                 id="about-title"
@@ -346,7 +395,7 @@ const Header = ({ files = [], uploadingFiles = {} }) => {
                   menuButtonRef.current?.focus();
                 }}
                 aria-label="Close about"
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
               >
                 <svg
                   className="w-6 h-6"
@@ -363,7 +412,7 @@ const Header = ({ files = [], uploadingFiles = {} }) => {
                 </svg>
               </button>
             </div>
-            <div className="space-y-4 text-gray-700 dark:text-gray-300">
+            <div className="space-y-4 text-slate-700 dark:text-slate-200">
               <p className="text-sm">
                 <strong>WifiX Transfer</strong> is a local area network (LAN)
                 file sharing application that lets you share files wirelessly
@@ -382,7 +431,7 @@ const Header = ({ files = [], uploadingFiles = {} }) => {
                   <li>Real-time sync via WebSockets</li>
                 </ul>
               </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-4">
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-4">
                 © 2025 WifiX Transfer. Open source project.
               </p>
             </div>
@@ -406,10 +455,10 @@ const Header = ({ files = [], uploadingFiles = {} }) => {
           onClick={() => setShowUsageDashboard(false)}
         >
           <div
-            className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+            className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl dark:shadow-blue-900/30 max-w-4xl w-full max-h-[90vh] overflow-y-auto border-0 dark:border dark:border-slate-700"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-4 flex items-center justify-between rounded-t-2xl z-10">
+            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 p-4 flex items-center justify-between rounded-t-2xl z-10">
               <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
                 <svg
                   className="w-6 h-6 text-purple-600"

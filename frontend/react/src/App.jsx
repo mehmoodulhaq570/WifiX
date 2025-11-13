@@ -8,7 +8,6 @@ import ServerControl from "./components/ServerControl";
 import FileUploadZone from "./components/FileUploadZone";
 import FileList from "./components/FileList";
 import DeleteModal from "./components/DeleteModal";
-import DarkModeToggle from "./components/DarkModeToggle";
 import Footer from "./components/Footer";
 import ConnectionApprovalModal from "./components/ConnectionApprovalModal";
 import ConnectionStatus from "./components/ConnectionStatus";
@@ -25,7 +24,6 @@ import { fetchDeviceInfo, fetchFiles, deleteFile } from "./utils/api";
 
 function App() {
   const [files, setFiles] = useState([]);
-  const [darkMode, setDarkMode] = useState(false);
   const [deviceInfo, setDeviceInfo] = useState({
     ip: "192.168.1.5",
     host_url: null,
@@ -603,13 +601,9 @@ function App() {
       />
       <Header files={files} uploadingFiles={uploadingFiles} />
 
-      <main
-        className={`transition-colors duration-300 ${
-          darkMode ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"
-        } font-sans py-6 min-h-screen`}
-      >
+      <main className="transition-colors duration-300 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:bg-slate-950 text-gray-900 dark:text-white font-sans py-6 min-h-screen">
         <div className="w-full px-4 md:px-8">
-          <div className="bg-white dark:bg-gray-800 rounded-none md:rounded-3xl shadow-none md:shadow-2xl p-6 md:p-8 -mt-0 md:-mt-12 w-full">
+          <div className="bg-white dark:bg-slate-900 rounded-none md:rounded-3xl shadow-none md:shadow-2xl p-6 md:p-8 -mt-0 md:-mt-12 w-full border-0 dark:border dark:border-slate-800">
             {/* Connection Status Banner */}
             <ConnectionStatus
               isHost={isHost}
@@ -690,11 +684,6 @@ function App() {
             setShowSetPinModal(false);
             setPendingFile(null);
           }}
-        />
-
-        <DarkModeToggle
-          darkMode={darkMode}
-          onToggle={() => setDarkMode(!darkMode)}
         />
 
         <Footer />

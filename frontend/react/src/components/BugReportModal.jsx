@@ -93,7 +93,7 @@ ${actual || "_Not specified_"}
       aria-modal="true"
       aria-labelledby="bug-report-title"
     >
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+      <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h2
             id="bug-report-title"
@@ -104,7 +104,7 @@ ${actual || "_Not specified_"}
           <button
             onClick={onClose}
             aria-label="Close bug report"
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
           >
             <svg
               className="w-6 h-6"
@@ -123,35 +123,35 @@ ${actual || "_Not specified_"}
         </div>
 
         <div className="space-y-4">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-slate-600 dark:text-slate-300">
             Help us improve WifiX by reporting bugs. Your environment info will
             be automatically included.
           </p>
 
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
               Bug Description <span className="text-red-500">*</span>
             </label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Brief summary of the issue..."
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
               rows={2}
             />
           </div>
 
           {/* Steps to Reproduce */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
               Steps to Reproduce
             </label>
             <textarea
               value={steps}
               onChange={(e) => setSteps(e.target.value)}
               placeholder="1. Go to...&#10;2. Click on...&#10;3. See error"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
               rows={3}
             />
           </div>
@@ -159,37 +159,37 @@ ${actual || "_Not specified_"}
           {/* Expected vs Actual */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
                 Expected Behavior
               </label>
               <textarea
                 value={expected}
                 onChange={(e) => setExpected(e.target.value)}
                 placeholder="What should happen..."
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 rows={2}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
                 Actual Behavior
               </label>
               <textarea
                 value={actual}
                 onChange={(e) => setActual(e.target.value)}
                 placeholder="What actually happened..."
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-md bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 rows={2}
               />
             </div>
           </div>
 
           {/* Environment preview */}
-          <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded text-xs">
-            <p className="font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <div className="bg-slate-50 dark:bg-slate-800 p-3 rounded text-xs">
+            <p className="font-medium text-slate-700 dark:text-slate-200 mb-1">
               Auto-included environment:
             </p>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p className="text-slate-600 dark:text-slate-300">
               {navigator.userAgent.slice(0, 80)}... • {navigator.platform}
             </p>
           </div>
@@ -198,7 +198,7 @@ ${actual || "_Not specified_"}
           <div className="flex gap-3 pt-2">
             <button
               onClick={handleCopyToClipboard}
-              className="flex-1 bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-900 dark:text-white px-4 py-2 rounded-md transition font-medium"
+              className="flex-1 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-900 dark:text-white px-4 py-2 rounded-md transition font-medium"
             >
               📋 Copy Report
             </button>
@@ -215,7 +215,7 @@ ${actual || "_Not specified_"}
             </button>
           </div>
 
-          <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+          <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
             The report will be copied to your clipboard and GitHub issues will
             open in a new tab.
           </p>

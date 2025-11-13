@@ -3,7 +3,7 @@ const UploadErrorModal = ({ show, error, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-11/12 max-w-md">
+      <div className="bg-white dark:bg-slate-900 rounded-xl shadow-2xl p-6 w-11/12 max-w-md">
         <div className="flex items-center justify-center mb-4">
           <div className="bg-red-100 dark:bg-red-900 rounded-full p-4">
             <svg
@@ -26,8 +26,9 @@ const UploadErrorModal = ({ show, error, onClose }) => {
           Upload Failed
         </h3>
 
-        <p className="text-sm text-gray-700 dark:text-gray-300 mb-6 text-center">
-          {error || "An error occurred while uploading the file. Please try again."}
+        <p className="text-sm text-slate-700 dark:text-slate-200 mb-6 text-center">
+          {error ||
+            "An error occurred while uploading the file. Please try again."}
         </p>
 
         <div className="flex justify-center">

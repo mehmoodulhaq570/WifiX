@@ -24,15 +24,15 @@ const ServerControl = ({
   // Disable the "Become Host" button when this client is already connected to a host
   const disableBecomeHost = !isHost && !!isApproved;
   return (
-    <section className="col-span-1 bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 flex flex-col items-center text-center">
-      <h2 className="text-lg md:text-xl font-bold text-blue-600 mb-4 border-b pb-2 w-full">
+    <section className="col-span-1 bg-white dark:bg-slate-900 rounded-2xl shadow-md dark:shadow-blue-900/20 p-6 flex flex-col items-center text-center border-0 dark:border dark:border-slate-800">
+      <h2 className="text-lg md:text-xl font-bold text-blue-600 dark:text-blue-400 mb-4 border-b dark:border-slate-700 pb-2 w-full">
         Connection
       </h2>
 
       {/* Role Selection */}
       <div className="flex flex-col items-center gap-3 w-full mb-4">
-        <div className="bg-blue-50 dark:bg-gray-700 p-4 rounded-lg w-full">
-          <p className="text-sm text-gray-700 dark:text-gray-300 mb-3">
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-700 p-4 rounded-lg w-full border border-blue-100 dark:border-slate-600">
+          <p className="text-sm text-slate-700 dark:text-slate-200 mb-3">
             Choose your role:
           </p>
           <button
@@ -63,8 +63,8 @@ const ServerControl = ({
       </div>
 
       {/* Shareable Link Section */}
-      <div className="w-full bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mb-4">
-        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+      <div className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-lg mb-4">
+        <p className="text-xs text-slate-600 dark:text-slate-300 mb-2">
           Share this link:
         </p>
         <div>
@@ -72,7 +72,7 @@ const ServerControl = ({
             type="text"
             value={shareUrl}
             readOnly
-            className="w-full px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300"
+            className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-md text-slate-700 dark:text-slate-200"
           />
         </div>
         <div className="mt-2 flex w-full justify-center">
@@ -142,7 +142,7 @@ const ServerControl = ({
       </div>
 
       <div className="flex flex-col items-center gap-2 w-full">
-        <p className="text-gray-600 dark:text-gray-300 text-sm">
+        <p className="text-slate-600 dark:text-slate-200 text-sm">
           <strong>LAN IP:</strong> {deviceInfo.lan_ip || deviceInfo.ip}
         </p>
         <div className="flex flex-col items-center gap-3 mt-2 w-full">
@@ -167,7 +167,7 @@ const ServerControl = ({
           </button>
 
           {qrVisible && (
-            <div className="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-lg border-2 border-blue-500">
+            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-lg border-2 border-blue-500">
               <QRCode
                 value={
                   deviceInfo.lan_url ||
@@ -176,7 +176,7 @@ const ServerControl = ({
                 }
                 size={150}
               />
-              <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 text-center">
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 text-center">
                 Scan to connect
               </p>
             </div>

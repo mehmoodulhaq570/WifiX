@@ -50,7 +50,7 @@ const ConnectedDevices = ({ socket, isHost }) => {
   }
 
   return (
-    <section className="col-span-1 bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6">
+    <section className="col-span-1 bg-white dark:bg-slate-900 rounded-2xl shadow-md dark:shadow-blue-900/20 p-6 border-0 dark:border dark:border-slate-800">
       <h2 className="text-lg md:text-xl font-bold text-blue-600 mb-4 border-b pb-2 flex items-center gap-2">
         <svg
           className="w-5 h-5"
@@ -72,7 +72,7 @@ const ConnectedDevices = ({ socket, isHost }) => {
         {connectedClients.map((client) => (
           <div
             key={client.sid}
-            className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-500 transition"
+            className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-600 hover:border-blue-300 dark:hover:border-blue-500 transition"
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">
@@ -82,7 +82,7 @@ const ConnectedDevices = ({ socket, isHost }) => {
                     {client.name || "Anonymous User"}
                   </h3>
                 </div>
-                <div className="space-y-1 text-xs text-gray-600 dark:text-gray-400">
+                <div className="space-y-1 text-xs text-slate-600 dark:text-slate-300">
                   <p className="flex items-center gap-2">
                     <svg
                       className="w-3 h-3"
@@ -144,7 +144,7 @@ const ConnectedDevices = ({ socket, isHost }) => {
         ))}
       </div>
 
-      <div className="mt-4 text-xs text-gray-500 dark:text-gray-400 bg-blue-50 dark:bg-gray-700 p-3 rounded-lg">
+      <div className="mt-4 text-xs text-slate-500 dark:text-slate-300 bg-blue-50 dark:bg-slate-800 p-3 rounded-lg">
         <p className="flex items-center gap-2">
           <svg
             className="w-3 h-3"

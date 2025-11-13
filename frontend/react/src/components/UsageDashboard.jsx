@@ -164,7 +164,7 @@ const UsageDashboard = ({ files, uploadingFiles }) => {
           <div className="text-2xl font-bold text-blue-600 dark:text-blue-300">
             {stats.totalFiles}
           </div>
-          <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+          <div className="text-xs text-slate-600 dark:text-slate-300 mt-1">
             Total Files
           </div>
         </div>
@@ -173,7 +173,7 @@ const UsageDashboard = ({ files, uploadingFiles }) => {
           <div className="text-2xl font-bold text-green-600 dark:text-green-300">
             {formatBytes(stats.totalSize)}
           </div>
-          <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+          <div className="text-xs text-slate-600 dark:text-slate-300 mt-1">
             Total Data
           </div>
         </div>
@@ -182,7 +182,7 @@ const UsageDashboard = ({ files, uploadingFiles }) => {
           <div className="text-2xl font-bold text-purple-600 dark:text-purple-300">
             {stats.todayFiles}
           </div>
-          <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+          <div className="text-xs text-slate-600 dark:text-slate-300 mt-1">
             Today's Files
           </div>
         </div>
@@ -191,7 +191,7 @@ const UsageDashboard = ({ files, uploadingFiles }) => {
           <div className="text-2xl font-bold text-orange-600 dark:text-orange-300">
             {formatBytes(stats.todaySize)}
           </div>
-          <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+          <div className="text-xs text-slate-600 dark:text-slate-300 mt-1">
             Today's Data
           </div>
         </div>
@@ -199,8 +199,8 @@ const UsageDashboard = ({ files, uploadingFiles }) => {
 
       {/* Graph */}
       {showGraph && (
-        <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
+        <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-lg">
+          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-4">
             Last 7 Days Activity
           </h3>
           <div className="flex items-end justify-between gap-2 h-40">
@@ -233,7 +233,7 @@ const UsageDashboard = ({ files, uploadingFiles }) => {
                     </div>
                   )}
                 </div>
-                <div className="text-xs text-gray-600 dark:text-gray-400 font-medium">
+                <div className="text-xs text-slate-600 dark:text-slate-300 font-medium">
                   {day.label}
                 </div>
               </div>
@@ -241,8 +241,8 @@ const UsageDashboard = ({ files, uploadingFiles }) => {
           </div>
 
           {/* Legend */}
-          <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600">
-            <div className="flex items-center justify-center gap-4 text-xs text-gray-600 dark:text-gray-400">
+          <div className="mt-4 pt-3 border-t border-gray-200 dark:border-slate-600">
+            <div className="flex items-center justify-center gap-4 text-xs text-slate-600 dark:text-slate-300">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 bg-gradient-to-t from-blue-500 to-blue-400 rounded" />
                 <span>Data transferred</span>
@@ -289,7 +289,7 @@ const UsageDashboard = ({ files, uploadingFiles }) => {
               );
             }
           }}
-          className="text-xs text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 underline"
+          className="text-xs text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 underline"
         >
           Reset Statistics
         </button>

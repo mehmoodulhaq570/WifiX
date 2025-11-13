@@ -3,11 +3,11 @@ const DeleteModal = ({ show, filename, onConfirm, onCancel }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-11/12 max-w-md">
+      <div className="bg-white dark:bg-slate-900 rounded-lg p-6 w-11/12 max-w-md">
         <h3 className="text-lg font-bold mb-2 text-gray-900 dark:text-white">
           Confirm delete
         </h3>
-        <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
+        <p className="text-sm text-slate-700 dark:text-slate-200 mb-4">
           Are you sure you want to delete <strong>{filename}</strong>? This
           cannot be undone.
         </p>

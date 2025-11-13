@@ -11,7 +11,7 @@ const VerifyPinModal = ({ show, filename, onVerify, onCancel }) => {
       setError("Please enter the PIN");
       return;
     }
-    
+
     onVerify(pin);
     setPin("");
     setError("");
@@ -25,12 +25,12 @@ const VerifyPinModal = ({ show, filename, onVerify, onCancel }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl max-w-md w-full p-6">
         <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
           🔒 PIN Protected File
         </h3>
-        
-        <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
+
+        <p className="text-sm text-slate-600 dark:text-slate-200 mb-4">
           This file is protected. Enter the PIN to download:
         </p>
 
@@ -40,7 +40,7 @@ const VerifyPinModal = ({ show, filename, onVerify, onCancel }) => {
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-2">
               PIN
             </label>
             <input
@@ -48,10 +48,10 @@ const VerifyPinModal = ({ show, filename, onVerify, onCancel }) => {
               value={pin}
               onChange={(e) => setPin(e.target.value)}
               placeholder="Enter PIN"
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-slate-800 dark:text-white"
               autoFocus
               onKeyPress={(e) => {
-                if (e.key === 'Enter') handleVerify();
+                if (e.key === "Enter") handleVerify();
               }}
             />
           </div>
@@ -66,7 +66,7 @@ const VerifyPinModal = ({ show, filename, onVerify, onCancel }) => {
         <div className="flex gap-3 mt-6">
           <button
             onClick={handleCancel}
-            className="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 font-medium transition"
+            className="flex-1 px-4 py-2 bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-700 font-medium transition"
           >
             Cancel
           </button>

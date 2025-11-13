@@ -25,14 +25,14 @@ const FileList = ({
   };
 
   return (
-    <section className="w-full bg-white dark:bg-gray-800 rounded-2xl shadow-md p-6 mt-8">
+    <section className="w-full bg-white dark:bg-slate-900 rounded-2xl shadow-md dark:shadow-blue-900/20 p-6 mt-8 border-0 dark:border dark:border-slate-800">
       <h2 className="text-lg md:text-xl font-bold text-blue-600 mb-4 border-b pb-2">
         Available Files
       </h2>
 
       {/* status and QR area */}
       <div className="mb-4">
-        <div className="text-sm text-gray-600 dark:text-gray-300">
+        <div className="text-sm text-slate-600 dark:text-slate-200">
           {statusMsg}
         </div>
         {qrUrl && qrVisible ? (
@@ -66,7 +66,7 @@ const FileList = ({
               {Object.entries(uploadingFiles).map(([filename, uploadInfo]) => (
                 <tr
                   key={`uploading-${filename}`}
-                  className="border-b bg-blue-50 dark:bg-gray-700"
+                  className="border-b bg-blue-50 dark:bg-slate-800"
                 >
                   <td className="p-3" colSpan="5">
                     <div className="space-y-2">
@@ -88,7 +88,7 @@ const FileList = ({
                           <span className="font-medium">{filename}</span>
                         </div>
                         <div className="flex items-center gap-4 text-sm">
-                          <span className="text-gray-600 dark:text-gray-300">
+                          <span className="text-slate-600 dark:text-slate-200">
                             {uploadInfo.speed}
                           </span>
                           <span className="font-semibold text-blue-600">
@@ -97,13 +97,13 @@ const FileList = ({
                         </div>
                       </div>
                       {/* Progress bar */}
-                      <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+                      <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2.5">
                         <div
                           className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
                           style={{ width: `${uploadInfo.progress}%` }}
                         ></div>
                       </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                      <div className="text-xs text-slate-500 dark:text-slate-300">
                         {(uploadInfo.loaded / 1024 / 1024).toFixed(2)} MB /{" "}
                         {(uploadInfo.total / 1024 / 1024).toFixed(2)} MB
                       </div>
