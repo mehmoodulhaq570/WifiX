@@ -111,19 +111,19 @@ gunicorn -k eventlet -w 1 --bind 0.0.0.0:5000 backend.app:app
 
 ## 🛠️ Tech Stack
 
-| Layer             | Technology             | Purpose                 |
-| ----------------- | ---------------------- | ----------------------- |
-| **Backend**       | Flask 2.3.2            | Web framework           |
-|                   | Flask-SocketIO         | WebSocket support       |
-|                   | Flask-Limiter          | Rate limiting           |
+| Layer             | Technology             | Purpose                   |
+| ----------------- | ---------------------- | ------------------------- |
+| **Backend**       | Flask 2.3.2            | Web framework             |
+|                   | Flask-SocketIO         | WebSocket support         |
+|                   | Flask-Limiter          | Rate limiting             |
 |                   | Zeroconf               | Network service discovery |
-|                   | Werkzeug               | Security utilities      |
-| **Frontend**      | React 19               | UI framework            |
-|                   | Vite                   | Build tool & dev server |
-|                   | Tailwind CSS + DaisyUI | Styling                 |
-|                   | Socket.IO Client       | Real-time communication |
-| **Communication** | WebSocket              | Live updates            |
-|                   | REST API               | File operations         |
+|                   | Werkzeug               | Security utilities        |
+| **Frontend**      | React 19               | UI framework              |
+|                   | Vite                   | Build tool & dev server   |
+|                   | Tailwind CSS + DaisyUI | Styling                   |
+|                   | Socket.IO Client       | Real-time communication   |
+| **Communication** | WebSocket              | Live updates              |
+|                   | REST API               | File operations           |
 
 ## Project Structure
 
