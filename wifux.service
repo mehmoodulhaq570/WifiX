@@ -1,0 +1,55 @@
+[Unit]
+Description=WifiX File Sharing Service
+Documentation=https://github.com/mehmoodulhaq570/WifiX
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/wifux
+
+# Environment
+Environment="PATH=/opt/wifux/venv/bin"
+
+# Load environment variables from file
+EnvironmentFile=-/opt/wifux/.env
+
+# Default environment variables (can be overridden in .env file)
+Environment="SECRET_KEY=change-this-in-production"
+Environment="ENABLE_ZEROCONF=1"
+Environment="REQUIRE_PIN=0"
+Environment="FILE_TTL_SECONDS=0"
+Environment="CLEANUP_INTERVAL_SECONDS=60"
+Environment="CORS_ORIGINS=http://localhost:5173"
+
+# Start command (using gunicorn for production)
+ExecStart=/opt/wifux/venv/bin/gunicorn \
+    -k eventlet \
+    -w 1 \
+    --bind 0.0.0.0:5000 \
+    --timeout 300 \
+    --access-logfile /var/log/wifux/access.log \
+    --error-logfile /var/log/wifux/error.log \
+    --log-level info \
+    backend.app:app
+
+# Restart policy
+Restart=always
+RestartSec=10
+StartLimitInterval=200
+StartLimitBurst=5
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/wifux/backend/uploads /var/log/wifux
+
+# Resource limits (optional, adjust as needed)
+# LimitNOFILE=65536
+# LimitNPROC=512
+
+[Install]
+WantedBy=multi-user.target

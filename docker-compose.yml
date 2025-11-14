@@ -1,0 +1,69 @@
+version: "3.8"
+
+services:
+  wifux:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wifux-app
+    restart: unless-stopped
+
+    # For Zeroconf/mDNS to work, uncomment host network mode
+    # network_mode: "host"
+
+    # If using bridge network (default), expose ports
+    ports:
+      - "5000:5000"
+
+    environment:
+      # Security
+      - SECRET_KEY=${SECRET_KEY:-change-this-secret-key-in-production}
+      - REQUIRE_PIN=${REQUIRE_PIN:-0}
+      - GLOBAL_PIN=${GLOBAL_PIN:-}
+
+      # File Management
+      - FILE_TTL_SECONDS=${FILE_TTL_SECONDS:-0}
+      - CLEANUP_INTERVAL_SECONDS=${CLEANUP_INTERVAL_SECONDS:-60}
+
+      # Network Discovery (Zeroconf/mDNS)
+      - ENABLE_ZEROCONF=${ENABLE_ZEROCONF:-1}
+
+      # CORS Configuration
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:5173,http://localhost:5174}
+
+    volumes:
+      # Persist uploaded files
+      - ./uploads:/app/backend/uploads
+      # Optional: Custom configuration
+      # - ./backend/.env:/app/backend/.env:ro
+
+    networks:
+      - wifux-net
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  wifux-net:
+    driver: bridge
+# Optional: Add nginx reverse proxy for HTTPS
+# Uncomment and configure if you want SSL termination
+#
+# nginx:
+#   image: nginx:alpine
+#   container_name: wifux-nginx
+#   restart: unless-stopped
+#   ports:
+#     - "80:80"
+#     - "443:443"
+#   volumes:
+#     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+#     - ./ssl:/etc/nginx/ssl:ro
+#   depends_on:
+#     - wifux
+#   networks:
+#     - wifux-net

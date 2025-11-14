@@ -12,7 +12,7 @@
 
 Share files seamlessly across your local network with drag-and-drop simplicity, QR code access, and real-time updates.
 
-[Features](#-features) • [Quick Start](#-quick-start) • [Documentation](#-documentation) • [Contributing](#-contributing)
+[Features](#-features) • [Quick Start](#-quick-start) • [Documentation](https://mehmoodulhaq570.github.io/WifiX/) • [Contributing](#-contributing)
 
 </div>
 
@@ -33,6 +33,7 @@ Share files seamlessly across your local network with drag-and-drop simplicity, 
 - 🔑 **PIN Protection** - Global and per-file PIN authentication
 - 🔒 **Secure Filenames** - Automatic sanitization prevents path traversal
 - 🛡️ **Rate Limiting** - Built-in protection against abuse
+- 🔍 **Zeroconf Discovery** - Auto-discover WifiX servers on local network (mDNS/Bonjour)
 
 ### User Experience
 
@@ -89,6 +90,25 @@ npm run dev
 - **Client Access:** Scan QR code or use displayed IP address
 - **Mobile:** Scan QR code from any mobile device on same network
 
+### Production Deployment
+
+For production deployment with Docker, systemd, HTTPS, and more, see **[DEPLOYMENT.md](DEPLOYMENT.md)**.
+
+**Quick production options:**
+
+```bash
+# Docker deployment
+docker-compose up -d
+
+# Linux systemd service
+sudo systemctl start wifux
+
+# Production server (Gunicorn)
+gunicorn -k eventlet -w 1 --bind 0.0.0.0:5000 backend.app:app
+```
+
+📖 **Full deployment guide:** [DEPLOYMENT.md](DEPLOYMENT.md) - Covers Docker, nginx, HTTPS, Zeroconf, monitoring, and more.
+
 ## 🛠️ Tech Stack
 
 | Layer             | Technology             | Purpose                 |
@@ -96,6 +116,7 @@ npm run dev
 | **Backend**       | Flask 2.3.2            | Web framework           |
 |                   | Flask-SocketIO         | WebSocket support       |
 |                   | Flask-Limiter          | Rate limiting           |
+|                   | Zeroconf               | Network service discovery |
 |                   | Werkzeug               | Security utilities      |
 | **Frontend**      | React 19               | UI framework            |
 |                   | Vite                   | Build tool & dev server |
@@ -476,7 +497,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ### Version 1.1.0 (Planned)
 
-- [ ] Docker support
+- [x] Docker support (see [DEPLOYMENT.md](DEPLOYMENT.md))
+- [x] Zeroconf/mDNS auto-discovery
 - [ ] Database integration (SQLite/PostgreSQL)
 - [ ] File search and filtering
 - [ ] Batch file operations
@@ -491,9 +513,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [ ] HTTPS/SSL by default
 - [ ] Multi-language support
 - [ ] Room codes for easy connections
-- [ ] mDNS discovery
 
-See [CHANGELOG.md](CHANGELOG.md) for version history and [GitHub Issues](https://github.com/yourusername/WifiX/issues) for tracking.
+See [CHANGELOG.md](CHANGELOG.md) for version history and [GitHub Issues](https://github.com/mehmoodulhaq570/WifiX/issues) for tracking.
 
 ## 🙏 Acknowledgments
 
@@ -509,9 +530,9 @@ Built with amazing open-source tools:
 
 ## 📞 Support & Community
 
-- 📚 **Documentation:** Browse [docs/](docs/) folder
-- 🐛 **Issues:** Report bugs on [GitHub Issues](https://github.com/yourusername/WifiX/issues)
-- 💬 **Discussions:** Join [GitHub Discussions](https://github.com/yourusername/WifiX/discussions)
+- 📚 **Documentation:** Browse [GitHub Pages](https://mehmoodulhaq570.github.io/WifiX/)
+- 🐛 **Issues:** Report bugs on [GitHub Issues](https://github.com/mehmoodulhaq570/WifiX/issues)
+- 💬 **Discussions:** Join [GitHub Discussions](https://github.com/mehmoodulhaq570/WifiX/discussions)
 - 🔒 **Security:** Report vulnerabilities via [SECURITY.md](SECURITY.md)
 
 ---
@@ -522,7 +543,7 @@ Built with amazing open-source tools:
 
 If you find WifiX useful, please ⭐ star this repository!
 
-[Report Bug](https://github.com/yourusername/WifiX/issues) · [Request Feature](https://github.com/yourusername/WifiX/issues) · [Documentation](docs/)
+[Report Bug](https://github.com/mehmoodulhaq570/WifiX/issues) · [Request Feature](https://github.com/mehmoodulhaq570/WifiX/issues) · [Documentation](https://mehmoodulhaq570.github.io/WifiX/)
 
 </div>
 
