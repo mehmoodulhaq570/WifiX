@@ -202,7 +202,7 @@ Note: uploaded files are now stored in `backend/uploads/`. During the migration 
    ```powershell
    npm run dev
    ```
-   Frontend will start on `http://localhost:5173` (or 5174 if 5173 is in use)
+   Frontend will start on `http://localhost:5173` (or 5174 if 5173 is in use).
 
 ## 📖 Documentation
 
