@@ -18,7 +18,7 @@ COPY frontend/react/ ./
 RUN npm run build
 
 # Stage 2: Production image
-FROM python:3.11-slim
+FROM python:3.11-alpine
 
 LABEL maintainer="WifiX Team"
 LABEL description="WifiX - Easy LAN File Sharing"
@@ -26,13 +26,15 @@ LABEL description="WifiX - Easy LAN File Sharing"
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+# Install system dependencies (Alpine uses apk instead of apt-get)
+RUN apk add --no-cache \
     gcc \
-    avahi-daemon \
-    avahi-utils \
-    libavahi-compat-libdnssd-dev \
-    && rm -rf /var/lib/apt/lists/*
+    musl-dev \
+    linux-headers \
+    avahi \
+    avahi-dev \
+    avahi-compat-libdns_sd \
+    dbus
 
 # Copy backend requirements
 COPY backend/requirements.txt ./backend/
