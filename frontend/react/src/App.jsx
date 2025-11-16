@@ -601,9 +601,9 @@ function App() {
       />
       <Header files={files} uploadingFiles={uploadingFiles} />
 
-      <main className="transition-colors duration-300 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:bg-slate-950 text-gray-900 dark:text-white font-sans py-6 min-h-screen">
-        <div className="w-full px-4 md:px-8">
-          <div className="bg-white dark:bg-slate-900 rounded-none md:rounded-3xl shadow-none md:shadow-2xl p-6 md:p-8 -mt-0 md:-mt-12 w-full border-0 dark:border dark:border-slate-800">
+      <main className="transition-colors duration-300 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:bg-slate-950 text-gray-900 dark:text-white font-sans min-h-screen w-full">
+        <div className="w-full px-4 md:px-6 lg:px-8 py-6">
+          <div className="bg-white dark:bg-slate-900 rounded-none md:rounded-2xl shadow-none md:shadow-xl p-4 md:p-6 lg:p-8 w-full border-0 dark:border dark:border-slate-800 max-w-[1920px] mx-auto">
             {/* Connection Status Banner */}
             <ConnectionStatus
               isHost={isHost}
