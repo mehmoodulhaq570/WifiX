@@ -69,8 +69,14 @@ app.config["MAX_CONTENT_LENGTH"] = 1024 * 1024 * 1024  # 1 GiB guard (adjust)
 app.secret_key = os.environ.get('SECRET_KEY') or os.urandom(24)
 
 # Allow cross-origin Socket.IO connections from the frontend dev server (Vite)
-# In production, restrict to specific origins via CORS_ORIGINS environment variable
-ALLOWED_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173').split(',')
+# In production, allow connections from any origin on the LAN to support file sharing
+# Users can restrict via CORS_ORIGINS environment variable if needed
+cors_env = os.environ.get('CORS_ORIGINS', '')
+if cors_env:
+    ALLOWED_ORIGINS = cors_env.split(',')
+else:
+    # Allow localhost dev servers and any LAN access (use '*' for permissive local sharing)
+    ALLOWED_ORIGINS = '*'
 
 # Enable CORS for all HTTP routes with credentials support
 CORS(app, resources={r"/*": {
@@ -83,10 +89,13 @@ CORS(app, resources={r"/*": {
 socketio = SocketIO(app, cors_allowed_origins=ALLOWED_ORIGINS, async_mode='threading')
 
 # Rate limiting configuration
+# More permissive for local development/testing - adjust via environment if needed
+rate_limit_hour = os.environ.get('RATE_LIMIT_HOUR', '500')
+rate_limit_day = os.environ.get('RATE_LIMIT_DAY', '2000')
 limiter = Limiter(
     get_remote_address,
     app=app,
-    default_limits=["200 per day", "50 per hour"],
+    default_limits=[f"{rate_limit_day} per day", f"{rate_limit_hour} per hour"],
     storage_uri="memory://"
 )
 
