@@ -92,6 +92,34 @@ npm run dev
 
 ### Production Deployment
 
+**🖥️ Desktop App (Recommended for Personal Use):**
+
+WifiX can be packaged as a standalone desktop application using **Tauri**:
+
+```powershell
+# Quick start (after Rust installation)
+.\START_TAURI.ps1
+
+# Or manually:
+cd frontend\react
+npm run tauri:dev      # Development mode
+npm run tauri:build    # Build .exe installer
+```
+
+📱 **Benefits:**
+
+- ✅ Single .exe file (~5 MB)
+- ✅ No hosting costs
+- ✅ Python backend auto-starts
+- ✅ No internet required
+- ✅ Users just download and run
+
+📖 **Desktop app guide:** [TAURI_DESKTOP_APP.md](TAURI_DESKTOP_APP.md)
+
+---
+
+**☁️ Cloud Deployment (For Public Access):**
+
 For production deployment with Docker, systemd, HTTPS, and more, see **[DEPLOYMENT.md](DEPLOYMENT.md)**.
 
 **Quick production options:**

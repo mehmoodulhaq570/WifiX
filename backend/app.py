@@ -186,6 +186,24 @@ def allowed_file(filename: str) -> bool:
         return True
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+@app.route('/assets/<path:filename>')
+def serve_assets(filename):
+    """Serve static assets from the React build (CSS, JS, images, etc.)"""
+    dist_assets = ROOT_DIR / 'frontend' / 'react' / 'dist' / 'assets'
+    if dist_assets.exists():
+        return send_from_directory(str(dist_assets), filename)
+    return "Asset not found", 404
+
+
+@app.route('/vite.svg')
+def serve_vite_svg():
+    """Serve vite.svg from the React dist folder"""
+    dist_folder = ROOT_DIR / 'frontend' / 'react' / 'dist'
+    if dist_folder.exists():
+        return send_from_directory(str(dist_folder), 'vite.svg')
+    return "File not found", 404
+
+
 @app.route('/')
 def index():
     """Basic page with a small upload form for Phase 1.
