@@ -111,10 +111,11 @@ def handle_become_host(data):
     """Mark the calling socket as the host that can approve incoming connection requests."""
     global HOST_SID
     HOST_SID = request.sid
+    logger.info(f"Socket {request.sid} became host")
     try:
         socketio.emit('host_status', {'available': True}, to=HOST_SID)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f"Error emitting host_status: {e}")
 
 
 @socketio.on('request_connect')
@@ -124,17 +125,20 @@ def handle_request_connect(data):
     """
     global HOST_SID
     payload = {'sid': request.sid, 'name': data.get('name') if isinstance(data, dict) else None}
+    logger.info(f"Client {request.sid} requesting connection. Host SID: {HOST_SID}")
     if HOST_SID:
         try:
             socketio.emit('incoming_request', payload, to=HOST_SID)
-        except Exception:
-            pass
+            logger.info(f"Forwarded connection request to host {HOST_SID}")
+        except Exception as e:
+            logger.error(f"Error forwarding request to host: {e}")
     else:
         # no host: notify requester immediately
+        logger.warning("No host available - denying connection request")
         try:
             socketio.emit('request_denied', {'reason': 'no_host'}, to=request.sid)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"Error denying request: {e}")
 
 
 @socketio.on('approve_request')
@@ -254,6 +258,7 @@ def _detect_lan_ip():
 
 
 @app.route('/info', methods=['GET'])
+@limiter.exempt
 def info():
     """Return JSON with connection URLs (host_url and lan_url) for device discovery/UI."""
     host_url = request.host_url  # includes scheme and trailing slash
@@ -300,6 +305,7 @@ PIN_VALUE = os.environ.get('ACCESS_PIN')
 
 
 @app.route('/auth/status', methods=['GET'])
+@limiter.exempt
 def auth_status():
     return jsonify({'pin_required': PIN_ENABLED, 'authed': bool(session.get('authed'))})
 

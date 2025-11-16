@@ -1,30 +1,43 @@
 import { useRef, useEffect, useState } from "react";
 import { getApiBase } from "../utils/api";
 
-export const useSocket = (isHost, isApproved, onFileUploaded, onFileDeleted) => {
+export const useSocket = (
+  isHost,
+  isApproved,
+  onFileUploaded,
+  onFileDeleted
+) => {
   const socketRef = useRef(null);
-  const [autoRequested, setAutoRequested] = useState(false);
+  const requestSentRef = useRef(false);
 
   const initSocket = async () => {
     try {
-      if (socketRef.current && socketRef.current.connected)
+      if (socketRef.current && socketRef.current.connected) {
+        console.log("Socket already connected:", socketRef.current.id);
         return socketRef.current;
-      
+      }
+
       const API_BASE = getApiBase();
+      console.log("Initializing socket connection to:", API_BASE);
       const { io } = await import("socket.io-client");
-      const s = io(API_BASE);
+      const s = io(API_BASE, {
+        transports: ["websocket", "polling"],
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5,
+      });
 
       s.on("connect", () => {
-        console.debug("socket connected", s.id);
-        // auto-request connection when opening host IP
-        if (!isHost && !autoRequested) {
-          try {
-            s.emit("request_connect", { name: null });
-            setAutoRequested(true);
-          } catch (e) {
-            console.warn("auto request failed", e);
-          }
-        }
+        console.log("✅ Socket connected successfully! Socket ID:", s.id);
+      });
+
+      s.on("connect_error", (error) => {
+        console.error("❌ Socket connection error:", error.message);
+      });
+
+      s.on("disconnect", (reason) => {
+        console.log("Socket disconnected. Reason:", reason);
+        requestSentRef.current = false;
       });
 
       s.on("file_uploaded", (data) => {
@@ -50,27 +63,35 @@ export const useSocket = (isHost, isApproved, onFileUploaded, onFileDeleted) => 
   };
 
   const startServer = async () => {
+    console.log("🏠 startServer called");
     if (socketRef.current && socketRef.current.connected) {
       try {
+        console.log("📤 Emitting become_host on existing socket");
         socketRef.current.emit("become_host", { name: `WifiX-host` });
         return { success: true };
       } catch (e) {
-        console.warn("failed to emit become_host on existing socket", e);
+        console.error("❌ Failed to emit become_host:", e);
         return { success: false };
       }
     }
 
+    console.log("Creating new socket for host");
     const API_BASE = getApiBase();
     try {
       const { io } = await import("socket.io-client");
-      const s = io(API_BASE, { autoConnect: false });
+      const s = io(API_BASE, {
+        autoConnect: true,
+        transports: ["websocket", "polling"],
+      });
 
       s.on("connect", () => {
-        console.log("Socket connected", s.id);
+        console.log("✅ Host socket connected! Socket ID:", s.id);
+        console.log("📤 Emitting become_host");
+        s.emit("become_host", { name: `WifiX-host` });
       });
 
       s.on("disconnect", () => {
-        console.log("Socket disconnected");
+        console.log("Host socket disconnected");
       });
 
       // Setup file event listeners for the new socket
@@ -86,15 +107,10 @@ export const useSocket = (isHost, isApproved, onFileUploaded, onFileDeleted) => 
         onFileDeleted(d.filename);
       });
 
-      s.connect();
-
-      const hostName = `WifiX-${Math.random().toString(36).slice(2, 8)}`;
-      s.emit("become_host", { name: hostName });
-
       socketRef.current = s;
       return { success: true };
     } catch (err) {
-      console.error("Failed to start server (socket connect):", err);
+      console.error("❌ Failed to start server (socket connect):", err);
       return { success: false, error: err.message };
     }
   };
@@ -121,51 +137,89 @@ export const useSocket = (isHost, isApproved, onFileUploaded, onFileDeleted) => 
 
   const connectToHost = async (displayName = "Guest") => {
     try {
+      console.log("🔌 connectToHost called with displayName:", displayName);
       const s = socketRef.current || (await initSocket());
       if (!s) {
+        console.error("❌ Socket unavailable");
         return { success: false, message: "Socket unavailable" };
       }
-      if (autoRequested) {
-        return {
-          success: false,
-          message: "Connection request already sent. Waiting for host approval...",
-        };
+
+      if (!s.connected) {
+        console.log("⏳ Socket not connected yet, waiting...");
+        await new Promise((resolve) => {
+          if (s.connected) {
+            resolve();
+          } else {
+            s.once("connect", resolve);
+            setTimeout(resolve, 5000); // timeout after 5s
+          }
+        });
       }
+
+      if (!s.connected) {
+        console.error("❌ Socket failed to connect within timeout");
+        return { success: false, message: "Connection timeout" };
+      }
+
+      console.log("📤 Emitting request_connect event with name:", displayName);
       s.emit("request_connect", { name: displayName });
-      setAutoRequested(true);
+      requestSentRef.current = true;
+      console.log("✅ Connection request sent successfully");
       return { success: true };
     } catch (e) {
-      console.warn("connectToHost", e);
+      console.error("❌ connectToHost error:", e);
       return { success: false, error: e.message };
     }
   };
 
   const setupSocketHandlers = (handlers) => {
     const s = socketRef.current;
-    if (!s) return;
+    if (!s) {
+      console.warn("⚠️ Cannot setup handlers - socket not initialized");
+      return;
+    }
+
+    console.log("🔧 Setting up socket event handlers");
+
+    // Remove old listeners to prevent duplicates
+    s.off("request_approved");
+    s.off("request_denied");
+    s.off("incoming_request");
+    s.off("host_status");
 
     if (handlers.onRequestApproved) {
-      s.on("request_approved", handlers.onRequestApproved);
+      s.on("request_approved", (data) => {
+        console.log("✅ Received request_approved event:", data);
+        handlers.onRequestApproved(data);
+      });
     }
     if (handlers.onRequestDenied) {
-      s.on("request_denied", handlers.onRequestDenied);
+      s.on("request_denied", (data) => {
+        console.log("❌ Received request_denied event:", data);
+        handlers.onRequestDenied(data);
+      });
     }
     if (handlers.onIncomingRequest) {
-      s.on("incoming_request", handlers.onIncomingRequest);
+      s.on("incoming_request", (data) => {
+        console.log("📥 Received incoming_request event:", data);
+        handlers.onIncomingRequest(data);
+      });
     }
     if (handlers.onHostStatus) {
       s.on("host_status", (st) => {
-        console.log("host_status event received:", st);
+        console.log("📊 Received host_status event:", st);
         handlers.onHostStatus(st);
         // If host is not available, disconnect
         if (st && st.available === false) {
           console.log("Host is not available - disconnecting");
           if (handlers.onHostDisconnected) {
-            handlers.onHostDisconnected({ reason: 'host_unavailable' });
+            handlers.onHostDisconnected({ reason: "host_unavailable" });
           }
         }
       });
     }
+
+    console.log("✅ Socket event handlers setup complete");
   };
 
   useEffect(() => {
@@ -183,6 +237,5 @@ export const useSocket = (isHost, isApproved, onFileUploaded, onFileDeleted) => 
     stopServer,
     connectToHost,
     setupSocketHandlers,
-    autoRequested,
   };
 };
