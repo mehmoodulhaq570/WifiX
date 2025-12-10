@@ -1,4 +1,22 @@
+<div align="center">
 
+# 📡 WifiX
+
+**Easy LAN File Sharing Made Simple**
+
+[![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB.svg)](https://react.dev/)
+[![Flask](https://img.shields.io/badge/Flask-2.3.2-000000.svg)](https://flask.palletsprojects.com/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
+Share files seamlessly across your local network with drag-and-drop simplicity, QR code access, and real-time updates.
+
+[Features](#-features) • [Quick Start](#-quick-start) • [Documentation](https://mehmoodulhaq570.github.io/WifiX/) • [Contributing](#-contributing)
+
+</div>
+
+---
 
 ## ✨ Features
 
