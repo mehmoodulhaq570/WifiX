@@ -5,10 +5,7 @@ __pycache__/
 *.pyd
 env/
 .venv/
-.venv\
 venv/
-venv\
-/
 # Old top-level uploads (if present)
 /uploads/
 # Backend uploads directory

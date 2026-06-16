@@ -7,13 +7,13 @@ After=network.target
 Type=simple
 User=www-data
 Group=www-data
-WorkingDirectory=/opt/wifux
+WorkingDirectory=/opt/wifix
 
 # Environment
-Environment="PATH=/opt/wifux/venv/bin"
+Environment="PATH=/opt/wifix/venv/bin:/usr/local/bin:/usr/bin:/bin"
 
 # Load environment variables from file
-EnvironmentFile=-/opt/wifux/.env
+EnvironmentFile=-/opt/wifix/.env
 
 # Default environment variables (can be overridden in .env file)
 Environment="SECRET_KEY=change-this-in-production"
@@ -21,18 +21,18 @@ Environment="ENABLE_ZEROCONF=1"
 Environment="REQUIRE_PIN=0"
 Environment="FILE_TTL_SECONDS=0"
 Environment="CLEANUP_INTERVAL_SECONDS=60"
-Environment="CORS_ORIGINS=http://localhost:5173"
+Environment="CORS_ORIGINS=http://localhost:5173,http://localhost:5174"
 
 # Start command (using gunicorn for production)
-ExecStart=/opt/wifux/venv/bin/gunicorn \
-    -k eventlet \
+ExecStart=/opt/wifix/venv/bin/gunicorn \
     -w 1 \
+    --threads 100 \
     --bind 0.0.0.0:5000 \
     --timeout 300 \
-    --access-logfile /var/log/wifux/access.log \
-    --error-logfile /var/log/wifux/error.log \
+    --access-logfile /var/log/wifix/access.log \
+    --error-logfile /var/log/wifix/error.log \
     --log-level info \
-    backend.app:app
+    backend.production:app
 
 # Restart policy
 Restart=always
@@ -45,7 +45,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/opt/wifux/backend/uploads /var/log/wifux
+ReadWritePaths=/opt/wifix/backend/uploads /var/log/wifix
 
 # Resource limits (optional, adjust as needed)
 # LimitNOFILE=65536

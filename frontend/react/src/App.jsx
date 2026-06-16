@@ -601,16 +601,16 @@ function App() {
       />
       <Header files={files} uploadingFiles={uploadingFiles} />
 
-      <main className="transition-colors duration-300 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:bg-slate-950 text-gray-900 dark:text-white font-sans min-h-screen w-full">
-        <div className="w-full px-4 md:px-6 lg:px-8 py-6">
-          <div className="bg-white dark:bg-slate-900 rounded-none md:rounded-2xl shadow-none md:shadow-xl p-4 md:p-6 lg:p-8 w-full border-0 dark:border dark:border-slate-800 max-w-[1920px] mx-auto">
+      <main className="transition-colors duration-300 bg-slate-50 dark:bg-slate-950 text-gray-900 dark:text-white font-sans min-h-screen w-full">
+        <div className="w-full max-w-[1600px] mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 md:py-6">
+          <div className="w-full min-w-0">
             {/* Connection Status Banner */}
             <ConnectionStatus
               isHost={isHost}
               isApproved={isApproved}
               statusMsg={statusMsg}
             />
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 md:gap-6">
               <ServerControl
                 isHost={isHost}
                 isApproved={isApproved}

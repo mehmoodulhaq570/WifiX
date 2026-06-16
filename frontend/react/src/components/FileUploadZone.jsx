@@ -128,7 +128,7 @@ const FileUploadZone = ({
   return (
     <section
       data-tour="upload-zone"
-      className="col-span-2 bg-white dark:bg-slate-900 rounded-2xl shadow-md dark:shadow-blue-900/20 p-6 flex flex-col border-0 dark:border dark:border-slate-800"
+      className="xl:col-span-2 bg-white dark:bg-slate-900 rounded-lg shadow-sm dark:shadow-blue-900/20 p-4 sm:p-5 md:p-6 flex flex-col border border-slate-200 dark:border-slate-800 min-w-0"
     >
       <h2 className="text-lg md:text-xl font-bold text-blue-600 mb-4 border-b pb-2">
         Upload Files
@@ -136,7 +136,7 @@ const FileUploadZone = ({
 
       {/* Clipboard hint */}
       <div className="mb-3 text-center">
-        <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2">
+        <p className="text-xs text-slate-500 dark:text-slate-400 flex flex-wrap items-center justify-center gap-2">
           <svg
             className="w-4 h-4"
             fill="none"
@@ -164,7 +164,7 @@ const FileUploadZone = ({
         onDragOver={handleDrag}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current.click()}
-        className={`border-2 border-dashed rounded-xl flex-1 flex items-center justify-center p-10 text-center cursor-pointer transition-all ${
+        className={`border-2 border-dashed rounded-xl min-h-56 flex-1 flex items-center justify-center p-5 sm:p-8 md:p-10 text-center cursor-pointer transition-all ${
           dragActive
             ? "border-blue-400 bg-blue-50 dark:bg-blue-900"
             : "border-gray-300"
@@ -177,14 +177,14 @@ const FileUploadZone = ({
           onChange={handleFileUpload}
           className="hidden"
         />
-        <div className="text-base sm:text-lg">
+        <div className="text-sm sm:text-base md:text-lg min-w-0 max-w-full">
           {selectedFiles.length > 0 ? (
             <div className="space-y-2">
               <p className="text-green-600 font-semibold">
                 ✓ {selectedFiles.length} File
                 {selectedFiles.length > 1 ? "s" : ""} Selected:
               </p>
-              <div className="max-h-32 overflow-y-auto px-4">
+              <div className="max-h-32 overflow-y-auto px-1 sm:px-4">
                 {selectedFiles.map((file, idx) => (
                   <p
                     key={idx}
@@ -217,7 +217,7 @@ const FileUploadZone = ({
 
       <div className="mt-6 space-y-3">
         {/* PIN Protection Toggle */}
-        <div className="flex items-center justify-center gap-2 text-sm">
+        <div className="flex items-center justify-center gap-2 text-sm flex-wrap">
           <input
             type="checkbox"
             id="pinProtection"

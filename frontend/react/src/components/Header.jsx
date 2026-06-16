@@ -71,7 +71,7 @@ const Header = ({ files = [], uploadingFiles = {} }) => {
 
   return (
     <>
-      <header className="relative w-full bg-gradient-to-r from-blue-600 to-cyan-500 py-8 text-center text-white shadow-lg rounded-b-3xl">
+      <header className="relative w-full bg-gradient-to-r from-blue-600 to-cyan-500 px-4 py-6 sm:py-8 text-center text-white shadow-lg rounded-b-2xl md:rounded-b-3xl">
         {/* Three-dot menu (top-right) */}
         <div ref={menuRef} className="absolute top-3 right-4">
           <div className="relative">
@@ -225,8 +225,8 @@ const Header = ({ files = [], uploadingFiles = {} }) => {
           </div>
         </div>
 
-        <div className="max-w-full">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">
+        <div className="max-w-3xl mx-auto pr-10 sm:pr-0">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
             WifiX Transfer
           </h1>
           <p className="opacity-90 text-sm md:text-base">
@@ -243,7 +243,7 @@ const Header = ({ files = [], uploadingFiles = {} }) => {
           aria-modal="true"
           aria-labelledby="settings-title"
         >
-          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl max-w-md w-full p-6">
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl max-w-md w-full p-4 sm:p-6">
             <div className="flex justify-between items-center mb-4">
               <h2
                 id="settings-title"
@@ -276,7 +276,7 @@ const Header = ({ files = [], uploadingFiles = {} }) => {
             </div>
             <div className="space-y-4 text-gray-800 dark:text-gray-100">
               {/* D: Theme toggle */}
-              <div className="flex items-center justify-between p-5 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-700 rounded-xl shadow-sm border border-blue-100 dark:border-slate-600">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 bg-slate-50 dark:bg-slate-800 rounded-lg shadow-sm border border-blue-100 dark:border-slate-600">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-white dark:bg-slate-900 rounded-lg shadow-sm">
                     {theme === "dark" ? (
@@ -381,7 +381,7 @@ const Header = ({ files = [], uploadingFiles = {} }) => {
           aria-modal="true"
           aria-labelledby="about-title"
         >
-          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl dark:shadow-blue-900/30 max-w-md w-full p-6 border-0 dark:border dark:border-slate-700">
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl dark:shadow-blue-900/30 max-w-md w-full p-4 sm:p-6 border-0 dark:border dark:border-slate-700">
             <div className="flex justify-between items-center mb-4">
               <h2
                 id="about-title"
@@ -455,11 +455,11 @@ const Header = ({ files = [], uploadingFiles = {} }) => {
           onClick={() => setShowUsageDashboard(false)}
         >
           <div
-            className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl dark:shadow-blue-900/30 max-w-4xl w-full max-h-[90vh] overflow-y-auto border-0 dark:border dark:border-slate-700"
+            className="bg-white dark:bg-slate-900 rounded-lg shadow-2xl dark:shadow-blue-900/30 max-w-4xl w-full max-h-[90vh] overflow-y-auto border-0 dark:border dark:border-slate-700"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 p-4 flex items-center justify-between rounded-t-2xl z-10">
-              <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 p-4 flex items-center justify-between gap-3 rounded-t-lg z-10">
+              <h2 className="text-base sm:text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2 min-w-0">
                 <svg
                   className="w-6 h-6 text-purple-600"
                   fill="none"
@@ -495,7 +495,7 @@ const Header = ({ files = [], uploadingFiles = {} }) => {
                 </svg>
               </button>
             </div>
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <UsageDashboard files={files} uploadingFiles={uploadingFiles} />
             </div>
           </div>

@@ -129,11 +129,23 @@ For production deployment with Docker, systemd, HTTPS, and more, see **[DEPLOYME
 docker-compose up -d
 
 # Linux systemd service
-sudo systemctl start wifux
+sudo systemctl start wifix
 
-# Production server (Gunicorn)
-gunicorn -k eventlet -w 1 --bind 0.0.0.0:5000 backend.app:app
+# Windows production server
+# From the project root:
+python -m waitress --listen=0.0.0.0:5000 --threads=100 backend.production:app
+
+# Or, if your terminal is already inside the backend folder:
+python -m waitress --listen=0.0.0.0:5000 --threads=100 production:app
+
+# Linux production server (Gunicorn)
+gunicorn -w 1 --threads 100 --bind 0.0.0.0:5000 backend.production:app
 ```
+
+On Windows/Waitress, the frontend defaults Socket.IO to HTTP polling because
+Waitress does not support WebSocket upgrades. On Linux with a WebSocket-capable
+server, set `VITE_SOCKET_TRANSPORTS=websocket,polling` before building the
+frontend if you want WebSocket upgrades.
 
 📖 **Full deployment guide:** [DEPLOYMENT.md](DEPLOYMENT.md) - Covers Docker, nginx, HTTPS, Zeroconf, monitoring, and more.
 

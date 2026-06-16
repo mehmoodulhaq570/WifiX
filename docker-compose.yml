@@ -1,11 +1,11 @@
 version: "3.8"
 
 services:
-  wifux:
+  wifix:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: wifux-app
+    container_name: wifix-app
     restart: unless-stopped
 
     # For Zeroconf/mDNS to work, uncomment host network mode
@@ -38,7 +38,7 @@ services:
       # - ./backend/.env:/app/backend/.env:ro
 
     networks:
-      - wifux-net
+      - wifix-net
 
     # Logging configuration
     logging:
@@ -48,14 +48,14 @@ services:
         max-file: "3"
 
 networks:
-  wifux-net:
+  wifix-net:
     driver: bridge
 # Optional: Add nginx reverse proxy for HTTPS
 # Uncomment and configure if you want SSL termination
 #
 # nginx:
 #   image: nginx:alpine
-#   container_name: wifux-nginx
+#   container_name: wifix-nginx
 #   restart: unless-stopped
 #   ports:
 #     - "80:80"
@@ -64,6 +64,6 @@ networks:
 #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
 #     - ./ssl:/etc/nginx/ssl:ro
 #   depends_on:
-#     - wifux
+#     - wifix
 #   networks:
-#     - wifux-net
+#     - wifix-net

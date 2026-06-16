@@ -18,6 +18,96 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2025-11-16
+
+### Added
+
+- **Full-Width Layout**: Application now uses entire viewport width
+
+  - Removed max-width constraint from #root
+  - Better space utilization on all screen sizes
+  - Responsive padding (px-4 on mobile, px-6 on tablet, px-8 on desktop)
+  - Max-width constraint only for ultra-wide screens (1920px)
+
+- **Comprehensive Debug Logging**: Socket.IO connection debugging
+
+  - Added logging to `become_host` handler
+  - Added logging to `request_connect` handler
+  - Host SID tracking in logs
+  - Connection approval/denial logging
+  - Helps troubleshoot connection issues
+
+- **Rate Limit Exemptions**:
+  - Exempted `/info` endpoint from rate limiting
+  - Exempted `/auth/status` endpoint from rate limiting
+  - Prevents 429 errors during normal usage
+  - Allows real-time polling without restrictions
+
+### Changed
+
+- **CORS Configuration**: Changed to wildcard (`*`) for LAN support
+
+  - Allows connections from any device on local network
+  - Required for mobile devices with dynamic IPs
+  - Configurable via `CORS_ORIGINS` environment variable
+  - Zeroconf discovery makes IPs unpredictable
+
+- **Rate Limits Increased**:
+
+  - From 50 requests/hour to 500 requests/hour
+  - From 200 requests/day to 2000 requests/day
+  - Configurable via `RATE_LIMIT_HOUR` and `RATE_LIMIT_DAY` env variables
+  - Better accommodation for development and active usage
+
+- **Socket.IO Connection Handling**:
+
+  - Replaced `autoRequested` state with `requestSentRef`
+  - Improved connection request flow
+  - Reset connection state on disconnect
+  - Better handler setup timing
+
+- **Mobile Responsiveness**:
+  - Improved touch targets for mobile devices
+  - Better responsive breakpoints (sm, md, lg, xl)
+  - Full-width on mobile, constrained on desktop
+  - Optimized padding and spacing
+
+### Fixed
+
+- **"Connect as Client" Not Working**:
+
+  - Fixed socket connection request flow
+  - Removed blocking `autoRequested` state
+  - Improved handler setup before connection
+  - Added wait for socket connection before emitting events
+
+- **Rate Limit 429 Errors**:
+
+  - Fixed frequent 429 errors on localhost
+  - Exempted frequently polled endpoints
+  - Increased default limits
+  - Better rate limit configuration
+
+- **Socket.IO Errors**:
+
+  - Fixed "not an accepted origin" errors for LAN devices
+  - Improved CORS configuration for Socket.IO
+  - Better error messages in logs
+  - Fixed connection state synchronization
+
+- **useSocket Hook Error**:
+
+  - Fixed undefined `autoRequested` variable
+  - Removed from return statement (not needed externally)
+  - Proper cleanup on component unmount
+
+- **Layout Issues**:
+  - Fixed centered layout not using full width
+  - Removed `display: flex` and `place-items: center` from body
+  - Proper full-width implementation with `width: 100%`
+
+---
+
 ## [1.0.0] - 2025-11-13
 
 ### Added

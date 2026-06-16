@@ -25,7 +25,7 @@ const FileList = ({
   };
 
   return (
-    <section className="w-full bg-white dark:bg-slate-900 rounded-2xl shadow-md dark:shadow-blue-900/20 p-6 mt-8 border-0 dark:border dark:border-slate-800">
+    <section className="w-full bg-white dark:bg-slate-900 rounded-lg shadow-sm dark:shadow-blue-900/20 p-4 sm:p-5 md:p-6 mt-4 md:mt-6 border border-slate-200 dark:border-slate-800 min-w-0">
       <h2 className="text-lg md:text-xl font-bold text-blue-600 mb-4 border-b pb-2">
         Available Files
       </h2>
@@ -49,8 +49,89 @@ const FileList = ({
         ) : null}
       </div>
 
-      {files.length > 0 ? (
-        <div className="overflow-x-auto">
+      {(files.length > 0 || Object.keys(uploadingFiles).length > 0) ? (
+        <>
+          <div className="md:hidden space-y-3">
+            {Object.entries(uploadingFiles).map(([filename, uploadInfo]) => (
+              <div
+                key={`mobile-uploading-${filename}`}
+                className="rounded-lg border border-blue-100 bg-blue-50 dark:border-slate-700 dark:bg-slate-800 p-3"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <span className="font-medium break-all text-sm">{filename}</span>
+                  <span className="font-semibold text-blue-600 text-sm shrink-0">
+                    {uploadInfo.progress}%
+                  </span>
+                </div>
+                <div className="mt-3 w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2.5">
+                  <div
+                    className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                    style={{ width: `${uploadInfo.progress}%` }}
+                  ></div>
+                </div>
+                <div className="mt-2 text-xs text-slate-500 dark:text-slate-300 flex justify-between gap-3">
+                  <span>{uploadInfo.speed}</span>
+                  <span>
+                    {(uploadInfo.loaded / 1024 / 1024).toFixed(2)} MB /{" "}
+                    {(uploadInfo.total / 1024 / 1024).toFixed(2)} MB
+                  </span>
+                </div>
+              </div>
+            ))}
+
+            {files.map((file) => {
+              const handleDownload = () => {
+                if (file.has_pin) {
+                  setPendingDownload(file);
+                  setShowVerifyPin(true);
+                } else {
+                  window.location.href = file.url;
+                }
+              };
+
+              return (
+                <div
+                  key={`mobile-${file.name}`}
+                  className="rounded-lg border border-slate-200 dark:border-slate-700 p-3"
+                >
+                  <div className="flex items-start gap-2">
+                    {file.has_pin && (
+                      <span
+                        className="text-yellow-600 dark:text-yellow-400 shrink-0"
+                        title="PIN Protected"
+                      >
+                        ðŸ”’
+                      </span>
+                    )}
+                    <span className="font-semibold text-sm break-all min-w-0">
+                      {file.name}
+                    </span>
+                  </div>
+                  <div className="mt-2 grid grid-cols-1 gap-1 text-xs text-slate-600 dark:text-slate-300">
+                    <span>{(file.size / 1024).toFixed(2)} KB</span>
+                    <span>{file.type}</span>
+                    <span>{new Date(file.mtime).toLocaleString()}</span>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button
+                      onClick={handleDownload}
+                      className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-md text-sm"
+                    >
+                      Download
+                    </button>
+                    <button
+                      onClick={() => onDelete(file.name)}
+                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-md text-sm"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="hidden md:block overflow-x-auto">
           <table className="w-full border-collapse text-sm sm:text-base">
             <thead>
               <tr className="bg-blue-500 text-white text-left">
@@ -167,7 +248,8 @@ const FileList = ({
               })}
             </tbody>
           </table>
-        </div>
+          </div>
+        </>
       ) : (
         <div className="p-6 text-center text-gray-500">
           No files found in the shared folder.

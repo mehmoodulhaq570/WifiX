@@ -4,6 +4,8 @@ python-dotenv==1.0.0
 qrcode==7.4
 zeroconf==0.42.0
 python-socketio==5.9.0
-eventlet==0.33.3
+simple-websocket==1.1.0
 Flask-Limiter
 flask-cors
+gunicorn; platform_system != "Windows"
+waitress; platform_system == "Windows"

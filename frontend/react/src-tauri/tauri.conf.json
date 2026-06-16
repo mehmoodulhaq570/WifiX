@@ -2,7 +2,7 @@
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "WifiX",
   "version": "1.0.0",
-  "identifier": "com.wifux.app",
+  "identifier": "com.wifix.app",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",

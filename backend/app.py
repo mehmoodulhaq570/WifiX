@@ -482,9 +482,8 @@ if FILE_TTL_SECONDS and FILE_TTL_SECONDS > 0:
     cleanup_thread.start()
 
 if __name__ == '__main__':
-    # run with socketio so real-time features can be added later
-    # eventlet is recommended for production/local LAN tests
-    # allow_unsafe_werkzeug=True is intentional for local development/testing
+    # Development entrypoint. Use Gunicorn with backend.production:app for production.
+    # allow_unsafe_werkzeug=True is intentional for local development/testing.
 
     # Get LAN IP and port
     lan_ip = _detect_lan_ip()

@@ -39,8 +39,8 @@ RUN apk add --no-cache \
 # Copy backend requirements
 COPY backend/requirements.txt ./backend/
 
-# Install Python dependencies + gunicorn for production
-RUN pip install --no-cache-dir -r backend/requirements.txt gunicorn
+# Install Python dependencies
+RUN pip install --no-cache-dir -r backend/requirements.txt
 
 # Copy backend application
 COPY backend/ ./backend/
@@ -53,11 +53,11 @@ RUN mkdir -p backend/uploads && \
     chmod 755 backend/uploads
 
 # Create non-root user for security
-RUN useradd -m -u 1000 wifux && \
-    chown -R wifux:wifux /app
+RUN useradd -m -u 1000 wifix && \
+    chown -R wifix:wifix /app
 
 # Switch to non-root user
-USER wifux
+USER wifix
 
 # Expose port
 EXPOSE 5000
@@ -66,5 +66,5 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/info').read()" || exit 1
 
-# Production command using gunicorn with eventlet worker
-CMD ["gunicorn", "-k", "eventlet", "-w", "1", "--bind", "0.0.0.0:5000", "--timeout", "300", "--log-level", "info", "backend.app:app"]
+# Production command using gunicorn with threaded workers
+CMD ["gunicorn", "-w", "1", "--threads", "100", "--bind", "0.0.0.0:5000", "--timeout", "300", "--log-level", "info", "backend.production:app"]

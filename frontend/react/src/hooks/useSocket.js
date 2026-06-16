@@ -10,6 +10,21 @@ export const useSocket = (
   const socketRef = useRef(null);
   const requestSentRef = useRef(false);
 
+  const getSocketTransports = () => {
+    const configured = import.meta.env.VITE_SOCKET_TRANSPORTS;
+    if (configured) {
+      return configured
+        .split(",")
+        .map((transport) => transport.trim())
+        .filter(Boolean);
+    }
+
+    // Waitress on Windows is a WSGI server and cannot expose the raw socket
+    // needed for WebSocket upgrades. Polling works on Waitress and remains
+    // compatible with Gunicorn deployments.
+    return ["polling"];
+  };
+
   const initSocket = async () => {
     try {
       if (socketRef.current && socketRef.current.connected) {
@@ -21,7 +36,7 @@ export const useSocket = (
       console.log("Initializing socket connection to:", API_BASE);
       const { io } = await import("socket.io-client");
       const s = io(API_BASE, {
-        transports: ["websocket", "polling"],
+        transports: getSocketTransports(),
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionAttempts: 5,
@@ -81,7 +96,7 @@ export const useSocket = (
       const { io } = await import("socket.io-client");
       const s = io(API_BASE, {
         autoConnect: true,
-        transports: ["websocket", "polling"],
+        transports: getSocketTransports(),
       });
 
       s.on("connect", () => {

@@ -24,14 +24,14 @@ const ServerControl = ({
   // Disable the "Become Host" button when this client is already connected to a host
   const disableBecomeHost = !isHost && !!isApproved;
   return (
-    <section className="col-span-1 bg-white dark:bg-slate-900 rounded-2xl shadow-md dark:shadow-blue-900/20 p-6 flex flex-col items-center text-center border-0 dark:border dark:border-slate-800">
+    <section className="col-span-1 bg-white dark:bg-slate-900 rounded-lg shadow-sm dark:shadow-blue-900/20 p-4 sm:p-5 md:p-6 flex flex-col items-center text-center border border-slate-200 dark:border-slate-800 min-w-0">
       <h2 className="text-lg md:text-xl font-bold text-blue-600 dark:text-blue-400 mb-4 border-b dark:border-slate-700 pb-2 w-full">
         Connection
       </h2>
 
       {/* Role Selection */}
       <div className="flex flex-col items-center gap-3 w-full mb-4">
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-700 p-4 rounded-lg w-full border border-blue-100 dark:border-slate-600">
+        <div className="bg-slate-50 dark:bg-slate-800 p-3 sm:p-4 rounded-lg w-full border border-blue-100 dark:border-slate-600">
           <p className="text-sm text-slate-700 dark:text-slate-200 mb-3">
             Choose your role:
           </p>
@@ -75,13 +75,13 @@ const ServerControl = ({
             className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-md text-slate-700 dark:text-slate-200"
           />
         </div>
-        <div className="mt-2 flex w-full justify-center">
+        <div className="mt-2 flex w-full flex-col sm:flex-row justify-center gap-2">
           <button
             onClick={() => {
               navigator.clipboard.writeText(shareUrl);
               toast.success("Link copied to clipboard!", { duration: 2000 });
             }}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-semibold transition"
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-semibold transition w-full sm:w-auto"
           >
             📋 Copy
           </button>
@@ -118,7 +118,7 @@ const ServerControl = ({
                 setTestLoading(false);
               }
             }}
-            className="ml-2 bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-2 rounded-md text-sm font-medium transition"
+            className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-3 py-2 rounded-md text-sm font-medium transition w-full sm:w-auto"
           >
             {testLoading ? "Testing..." : "Test connection"}
           </button>
@@ -167,7 +167,7 @@ const ServerControl = ({
           </button>
 
           {qrVisible && (
-            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-lg border-2 border-blue-500">
+            <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-lg border-2 border-blue-500 max-w-full">
               <QRCode
                 value={
                   deviceInfo.lan_url ||
