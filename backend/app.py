@@ -8,6 +8,7 @@ import pkgutil
 import atexit
 import socket
 import ssl as _ssl
+import secrets
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlparse, urlunparse
@@ -104,6 +105,8 @@ HOST_SID = None
 
 # Per-file PIN storage: {filename: pin_code}
 FILE_PINS = {}
+PENDING_CONNECTIONS = {}
+CONNECTION_STATUS = {}
 
 
 @socketio.on('become_host')
@@ -116,6 +119,7 @@ def handle_become_host(data):
         socketio.emit('host_status', {'available': True}, to=HOST_SID)
     except Exception as e:
         logger.error(f"Error emitting host_status: {e}")
+    return {'ok': True, 'host_sid': HOST_SID}
 
 
 @socketio.on('request_connect')
@@ -124,14 +128,28 @@ def handle_request_connect(data):
     Payload can include a display name: { name: 'Alice' }
     """
     global HOST_SID
-    payload = {'sid': request.sid, 'name': data.get('name') if isinstance(data, dict) else None}
+    request_id = secrets.token_urlsafe(12)
+    payload = {
+        'id': request_id,
+        'sid': request.sid,
+        'name': data.get('name') if isinstance(data, dict) else None,
+    }
+    PENDING_CONNECTIONS[request_id] = payload
+    CONNECTION_STATUS[request_id] = {'status': 'pending'}
     logger.info(f"Client {request.sid} requesting connection. Host SID: {HOST_SID}")
     if HOST_SID:
         try:
             socketio.emit('incoming_request', payload, to=HOST_SID)
             logger.info(f"Forwarded connection request to host {HOST_SID}")
+            return {'ok': True, 'status': 'pending_host_approval', 'request_id': request_id}
         except Exception as e:
             logger.error(f"Error forwarding request to host: {e}")
+            return {
+                'ok': True,
+                'status': 'pending_host_approval',
+                'request_id': request_id,
+                'warning': str(e),
+            }
     else:
         # no host: notify requester immediately
         logger.warning("No host available - denying connection request")
@@ -139,31 +157,102 @@ def handle_request_connect(data):
             socketio.emit('request_denied', {'reason': 'no_host'}, to=request.sid)
         except Exception as e:
             logger.error(f"Error denying request: {e}")
+        return {'ok': False, 'reason': 'no_host'}
 
 
 @socketio.on('approve_request')
 def handle_approve_request(data):
     """Host approves a request. Expects { sid: '<requester-sid>' }"""
     target = None
+    request_id = None
     if isinstance(data, dict):
         target = data.get('sid')
+        request_id = data.get('id')
     if target:
         try:
             socketio.emit('request_approved', {'by': request.sid}, to=target)
+            if request_id:
+                PENDING_CONNECTIONS.pop(request_id, None)
+                CONNECTION_STATUS[request_id] = {'status': 'approved'}
+            return {'ok': True}
         except Exception:
             pass
+    return {'ok': False}
 
 
 @socketio.on('deny_request')
 def handle_deny_request(data):
     target = None
+    request_id = None
     if isinstance(data, dict):
         target = data.get('sid')
+        request_id = data.get('id')
     if target:
         try:
             socketio.emit('request_denied', {'by': request.sid}, to=target)
+            if request_id:
+                PENDING_CONNECTIONS.pop(request_id, None)
+                CONNECTION_STATUS[request_id] = {'status': 'denied'}
+            return {'ok': True}
         except Exception:
             pass
+    return {'ok': False}
+
+
+@app.post('/connect/request')
+def create_connection_request():
+    """HTTP fallback for client connection requests."""
+    global HOST_SID
+    data = request.get_json(silent=True) or {}
+    if not HOST_SID:
+        return jsonify({'ok': False, 'reason': 'no_host'}), 409
+
+    request_id = secrets.token_urlsafe(12)
+    payload = {
+        'id': request_id,
+        'sid': data.get('sid'),
+        'name': data.get('name') or 'Guest',
+    }
+    PENDING_CONNECTIONS[request_id] = payload
+    CONNECTION_STATUS[request_id] = {'status': 'pending'}
+
+    try:
+        socketio.emit('incoming_request', payload, to=HOST_SID)
+    except Exception as exc:
+        logger.warning(f"Socket fallback request stored but emit failed: {exc}")
+
+    return jsonify({'ok': True, 'request_id': request_id})
+
+
+@app.get('/connect/pending')
+def list_pending_connection_requests():
+    """HTTP fallback used by the host UI to discover missed requests."""
+    return jsonify(list(PENDING_CONNECTIONS.values()))
+
+
+@app.post('/connect/respond')
+def respond_connection_request():
+    """HTTP fallback for approving or denying a pending client request."""
+    data = request.get_json(silent=True) or {}
+    request_id = data.get('id')
+    decision = data.get('decision')
+    pending = PENDING_CONNECTIONS.pop(request_id, None)
+
+    if not pending or decision not in {'approved', 'denied'}:
+        return jsonify({'ok': False}), 404
+
+    CONNECTION_STATUS[request_id] = {'status': decision}
+    target = pending.get('sid')
+    if target:
+        event = 'request_approved' if decision == 'approved' else 'request_denied'
+        socketio.emit(event, {'by': HOST_SID, 'request_id': request_id}, to=target)
+
+    return jsonify({'ok': True})
+
+
+@app.get('/connect/status/<request_id>')
+def get_connection_request_status(request_id):
+    return jsonify(CONNECTION_STATUS.get(request_id, {'status': 'unknown'}))
 
 
 @socketio.on('disconnect')

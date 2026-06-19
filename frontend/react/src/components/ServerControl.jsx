@@ -12,6 +12,7 @@ const ServerControl = ({
   onStopServer,
   onConnectToHost,
   onToggleQR,
+  isConnectingClient = false,
 }) => {
   const shareUrl =
     deviceInfo.lan_url ||
@@ -19,17 +20,17 @@ const ServerControl = ({
     `http://${deviceInfo.lan_ip || deviceInfo.ip}:5000`;
 
   const [testLoading, setTestLoading] = useState(false);
-  const [testResult, setTestResult] = useState(null); // null | { ok: bool, status?: number, msg?: string }
+  const [testResult, setTestResult] = useState(null);
 
-  // Disable the "Become Host" button when this client is already connected to a host
   const disableBecomeHost = !isHost && !!isApproved;
+  const disableClientConnect = isHost || isConnectingClient;
+
   return (
     <section className="col-span-1 bg-white dark:bg-slate-900 rounded-lg shadow-sm dark:shadow-blue-900/20 p-4 sm:p-5 md:p-6 flex flex-col items-center text-center border border-slate-200 dark:border-slate-800 min-w-0">
       <h2 className="text-lg md:text-xl font-bold text-blue-600 dark:text-blue-400 mb-4 border-b dark:border-slate-700 pb-2 w-full">
         Connection
       </h2>
 
-      {/* Role Selection */}
       <div className="flex flex-col items-center gap-3 w-full mb-4">
         <div className="bg-slate-50 dark:bg-slate-800 p-3 sm:p-4 rounded-lg w-full border border-blue-100 dark:border-slate-600">
           <p className="text-sm text-slate-700 dark:text-slate-200 mb-3">
@@ -46,23 +47,54 @@ const ServerControl = ({
                 : "bg-green-500 hover:bg-green-600 text-white"
             }`}
           >
-            {isHost ? "🛑 Stop Hosting" : "🏠 Become Host"}
+            {isHost ? "Hosting Active - Stop" : "Become Host"}
           </button>
+          {isHost && (
+            <p className="mb-2 text-xs font-medium text-green-700 dark:text-green-300">
+              This device is hosting. Clients can request access now.
+            </p>
+          )}
           <button
             onClick={onConnectToHost}
-            disabled={isHost}
-            className={`font-semibold px-6 py-2 rounded-md w-full transition ${
-              isHost
+            disabled={disableClientConnect}
+            className={`font-semibold px-6 py-2 rounded-md w-full transition flex items-center justify-center gap-2 min-h-10 ${
+              disableClientConnect
                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                 : "bg-indigo-500 hover:bg-indigo-600 text-white"
             }`}
           >
-            👥 Connect as Client
+            {isConnectingClient && (
+              <svg
+                className="h-4 w-4 animate-spin"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden="true"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                />
+              </svg>
+            )}
+            {isConnectingClient ? "Connecting..." : "Connect as Client"}
           </button>
+          {isConnectingClient && (
+            <p className="mt-2 text-xs font-medium text-indigo-700 dark:text-indigo-300">
+              Sending request to host...
+            </p>
+          )}
         </div>
       </div>
 
-      {/* Shareable Link Section */}
       <div className="w-full bg-slate-50 dark:bg-slate-800 p-4 rounded-lg mb-4">
         <p className="text-xs text-slate-600 dark:text-slate-300 mb-2">
           Share this link:
@@ -83,7 +115,7 @@ const ServerControl = ({
             }}
             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-semibold transition w-full sm:w-auto"
           >
-            📋 Copy
+            Copy
           </button>
           <button
             onClick={async () => {
@@ -109,10 +141,10 @@ const ServerControl = ({
                     msg: data.host_url || "OK",
                   });
                 }
-              } catch (e) {
+              } catch (error) {
                 setTestResult({
                   ok: false,
-                  msg: e.name === "AbortError" ? "timeout" : e.message,
+                  msg: error.name === "AbortError" ? "timeout" : error.message,
                 });
               } finally {
                 setTestLoading(false);
@@ -127,18 +159,17 @@ const ServerControl = ({
           <div className="mt-2 text-sm">
             {testResult.ok ? (
               <span className="text-green-700">
-                ✅ Reachable — {testResult.msg}
+                Reachable - {testResult.msg}
               </span>
             ) : (
               <span className="text-red-700">
-                ❌ Not reachable
+                Not reachable
                 {testResult.status ? ` (HTTP ${testResult.status})` : ""}
-                {testResult.msg ? ` — ${testResult.msg}` : ""}
+                {testResult.msg ? ` - ${testResult.msg}` : ""}
               </span>
             )}
           </div>
         )}
-        {/* Connection help and zeroconf instructions removed per user request */}
       </div>
 
       <div className="flex flex-col items-center gap-2 w-full">
@@ -168,14 +199,7 @@ const ServerControl = ({
 
           {qrVisible && (
             <div className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-lg border-2 border-blue-500 max-w-full">
-              <QRCode
-                value={
-                  deviceInfo.lan_url ||
-                  deviceInfo.host_url ||
-                  `http://${deviceInfo.lan_ip || deviceInfo.ip}:5000`
-                }
-                size={150}
-              />
+              <QRCode value={shareUrl} size={150} />
               <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 text-center">
                 Scan to connect
               </p>

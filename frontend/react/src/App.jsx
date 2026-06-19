@@ -20,7 +20,15 @@ import { useFileUpload } from "./hooks/useFileUpload";
 import { useAuth } from "./hooks/useAuth";
 
 // Utils
-import { fetchDeviceInfo, fetchFiles, deleteFile } from "./utils/api";
+import {
+  fetchDeviceInfo,
+  fetchFiles,
+  deleteFile,
+  getApiBase,
+  fetchPendingConnectionRequests,
+  respondToConnectionRequest,
+  fetchConnectionRequestStatus,
+} from "./utils/api";
 
 function App() {
   const [files, setFiles] = useState([]);
@@ -45,6 +53,8 @@ function App() {
   const [pendingFile, setPendingFile] = useState(null);
   const [pinProtectionEnabled, setPinProtectionEnabled] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState("");
+  const [isConnectingClient, setIsConnectingClient] = useState(false);
+  const [pendingClientRequestId, setPendingClientRequestId] = useState(null);
 
   // B: Track per-file upload progress and speed
   const [uploadingFiles, setUploadingFiles] = useState({}); // { filename: { progress: 0-100, speed: "123 KB/s", loaded: bytes, total: bytes } }
@@ -90,6 +100,39 @@ function App() {
     setFiles(items);
   };
 
+  const getConnectionHandlers = () => ({
+    onRequestApproved: () => {
+      setPendingClientRequestId(null);
+      setIsApproved(true);
+      setStatusMsg("Connected to host.");
+      loadFiles();
+    },
+    onRequestDenied: (data) => {
+      setPendingClientRequestId(null);
+      if (data?.reason === "no_host") {
+        setStatusMsg("No host is available. Ask the host to click Become Host first.");
+      } else {
+        setStatusMsg("Connection denied by host.");
+      }
+    },
+    onIncomingRequest: (data) => {
+      setPendingRequest(data);
+      setShowApprovalModal(true);
+    },
+    onHostStatus: (st) => {
+      if (st && st.available === false) {
+        setStatusMsg("Host is not available.");
+      }
+    },
+    onHostDisconnected: (data) => {
+      console.log("Host disconnected:", data);
+      setIsApproved(false);
+      setIsHost(false);
+      setFiles([]);
+      setStatusMsg("Host has disconnected. All connections lost.");
+    },
+  });
+
   // Auth initialization
   const handleAuthComplete = async () => {
     const info = await fetchDeviceInfo();
@@ -99,34 +142,7 @@ function App() {
     await initSocket();
 
     // Setup socket event handlers
-    setupSocketHandlers({
-      onRequestApproved: () => {
-        setIsApproved(true);
-        setStatusMsg("Connected to host.");
-        loadFiles();
-      },
-      onRequestDenied: () => {
-        setStatusMsg("Connection denied by host.");
-      },
-      onIncomingRequest: (data) => {
-        // Show modal instead of browser confirm
-        setPendingRequest(data);
-        setShowApprovalModal(true);
-      },
-      onHostStatus: (st) => {
-        if (st && st.available === false) {
-          setStatusMsg("Host is not available.");
-        }
-      },
-      onHostDisconnected: (data) => {
-        // Host has stopped - clear everything
-        console.log("Host disconnected:", data);
-        setIsApproved(false);
-        setIsHost(false);
-        setFiles([]);
-        setStatusMsg("Host has disconnected. All connections lost.");
-      },
-    });
+    setupSocketHandlers(getConnectionHandlers());
   };
 
   useAuth(handleAuthComplete);
@@ -170,22 +186,73 @@ function App() {
     return () => clearInterval(interval);
   }, [isHost, isApproved, files]);
 
+  useEffect(() => {
+    if (!isHost || showApprovalModal) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const pending = await fetchPendingConnectionRequests();
+        if (pending.length > 0) {
+          setPendingRequest(pending[0]);
+          setShowApprovalModal(true);
+        }
+      } catch (error) {
+        console.warn("pending connection poll failed", error);
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [isHost, showApprovalModal]);
+
+  useEffect(() => {
+    if (!pendingClientRequestId || isApproved) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const result = await fetchConnectionRequestStatus(pendingClientRequestId);
+        if (result.status === "approved") {
+          setPendingClientRequestId(null);
+          setIsApproved(true);
+          setStatusMsg("Connected to host.");
+          toast.success("Host approved your connection.");
+          loadFiles();
+        } else if (result.status === "denied") {
+          setPendingClientRequestId(null);
+          setStatusMsg("Connection denied by host.");
+          toast.error("Connection denied by host.");
+        }
+      } catch (error) {
+        console.warn("connection status poll failed", error);
+      }
+    }, 1500);
+
+    return () => clearInterval(interval);
+  }, [pendingClientRequestId, isApproved]);
+
   // Server control handlers
   const handleStartServer = async () => {
+    setStatusMsg("Starting host...");
+    const backendInfo = await fetchDeviceInfo();
+    if (!backendInfo) {
+      const message = `Backend is not reachable at ${getApiBase()}. Start the backend and refresh the frontend.`;
+      setStatusMsg(message);
+      toast.error(message, { duration: 7000 });
+      return;
+    }
+
     const result = await socketStartServer();
     if (result.success) {
       setIsHost(true);
-      const info = await fetchDeviceInfo();
-      if (info) {
-        setDeviceInfo((d) => ({ ...d, ...info }));
-      }
+      setupSocketHandlers(getConnectionHandlers());
+      setDeviceInfo((d) => ({ ...d, ...backendInfo }));
       // Load existing files when becoming host
       await loadFiles();
       setStatusMsg("Server started. Waiting for connections...");
       toast.success("Server started successfully!");
     } else {
       toast.error(
-        "Unable to connect to backend Socket.IO. Make sure the backend is running and reachable.",
+        result.message ||
+          "Unable to connect to backend Socket.IO. Make sure the backend is running and reachable.",
         { duration: 6000 }
       );
     }
@@ -198,47 +265,36 @@ function App() {
   };
 
   const handleConnectToHost = async () => {
-    // Ensure socket is initialized and handlers are set up before connecting
-    const socket = socketRef.current || (await initSocket());
-    if (!socket) {
-      setStatusMsg("Failed to initialize socket connection");
-      return;
-    }
+    setIsConnectingClient(true);
+    setStatusMsg("Sending connection request to host...");
 
-    // Setup handlers if not already done
-    setupSocketHandlers({
-      onRequestApproved: () => {
-        setIsApproved(true);
-        setStatusMsg("Connected to host.");
-        loadFiles();
-      },
-      onRequestDenied: () => {
-        setStatusMsg("Connection denied by host.");
-      },
-      onIncomingRequest: (data) => {
-        setPendingRequest(data);
-        setShowApprovalModal(true);
-      },
-      onHostStatus: (st) => {
-        if (st && st.available === false) {
-          setStatusMsg("Host is not available.");
+    try {
+      // Ensure socket is initialized and handlers are set up before connecting
+      const socket = socketRef.current || (await initSocket());
+      if (!socket) {
+        setStatusMsg("Failed to initialize socket connection");
+        toast.error("Could not initialize client connection.");
+        return;
+      }
+
+      // Setup handlers if not already done
+      setupSocketHandlers(getConnectionHandlers());
+
+      // Now connect
+      const result = await socketConnectToHost();
+      if (result.success) {
+        if (result.requestId) {
+          setPendingClientRequestId(result.requestId);
         }
-      },
-      onHostDisconnected: (data) => {
-        console.log("Host disconnected:", data);
-        setIsApproved(false);
-        setIsHost(false);
-        setFiles([]);
-        setStatusMsg("Host has disconnected. All connections lost.");
-      },
-    });
-
-    // Now connect
-    const result = await socketConnectToHost();
-    if (result.success) {
-      setStatusMsg("Connection request sent. Waiting for host approval...");
-    } else {
-      setStatusMsg(result.message || "Failed to send connection request");
+        setStatusMsg("Connection request sent. Waiting for host approval...");
+        toast.success("Request sent to host.");
+      } else {
+        const message = result.message || "Failed to send connection request";
+        setStatusMsg(message);
+        toast.error(message, { duration: 5000 });
+      }
+    } finally {
+      setIsConnectingClient(false);
     }
   };
 
@@ -319,7 +375,7 @@ function App() {
       // Create custom upload with progress tracking
       const result = await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
-        const apiBase = import.meta.env.VITE_API_URL || window.location.origin;
+        const apiBase = getApiBase();
         xhr.open("POST", `${apiBase.replace(/\/$/, "")}/upload`, true);
         xhr.withCredentials = true;
 
@@ -553,9 +609,19 @@ function App() {
   };
 
   // Connection approval handlers
-  const handleApproveConnection = () => {
+  const handleApproveConnection = async () => {
     if (pendingRequest && socketRef.current) {
-      socketRef.current.emit("approve_request", { sid: pendingRequest.sid });
+      socketRef.current.emit("approve_request", {
+        id: pendingRequest.id,
+        sid: pendingRequest.sid,
+      });
+      if (pendingRequest.id) {
+        try {
+          await respondToConnectionRequest(pendingRequest.id, "approved");
+        } catch (error) {
+          console.warn("HTTP approval fallback failed", error);
+        }
+      }
       setStatusMsg(
         `Approved connection from ${pendingRequest.name || "Guest"}`
       );
@@ -564,9 +630,19 @@ function App() {
     setPendingRequest(null);
   };
 
-  const handleDenyConnection = () => {
+  const handleDenyConnection = async () => {
     if (pendingRequest && socketRef.current) {
-      socketRef.current.emit("deny_request", { sid: pendingRequest.sid });
+      socketRef.current.emit("deny_request", {
+        id: pendingRequest.id,
+        sid: pendingRequest.sid,
+      });
+      if (pendingRequest.id) {
+        try {
+          await respondToConnectionRequest(pendingRequest.id, "denied");
+        } catch (error) {
+          console.warn("HTTP deny fallback failed", error);
+        }
+      }
       setStatusMsg(`Denied connection from ${pendingRequest.name || "Guest"}`);
     }
     setShowApprovalModal(false);
@@ -621,6 +697,7 @@ function App() {
                 onStopServer={handleStopServer}
                 onConnectToHost={handleConnectToHost}
                 onToggleQR={handleToggleQR}
+                isConnectingClient={isConnectingClient}
               />
 
               <FileUploadZone

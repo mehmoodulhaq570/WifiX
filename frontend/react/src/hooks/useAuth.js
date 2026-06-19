@@ -1,13 +1,19 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { checkAuthStatus, authenticateWithPin } from "../utils/api";
 
 export const useAuth = (onAuthComplete) => {
+  const onAuthCompleteRef = useRef(onAuthComplete);
+
+  useEffect(() => {
+    onAuthCompleteRef.current = onAuthComplete;
+  }, [onAuthComplete]);
+
   useEffect(() => {
     const ensureAuth = async () => {
       try {
         const st = await checkAuthStatus();
         if (!st) {
-          onAuthComplete();
+          onAuthCompleteRef.current();
           return;
         }
         if (st.pin_required && !st.authed) {
@@ -17,13 +23,13 @@ export const useAuth = (onAuthComplete) => {
             return { authed: false, message: "Invalid PIN" };
           }
         }
-        onAuthComplete();
+        onAuthCompleteRef.current();
       } catch (e) {
         console.warn("ensureAuth", e);
-        onAuthComplete();
+        onAuthCompleteRef.current();
       }
     };
 
     ensureAuth();
-  }, [onAuthComplete]);
+  }, []);
 };

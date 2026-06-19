@@ -7,6 +7,80 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - 2026-06-19
+
+- **Production Backend Entrypoint**:
+
+  - Added a dedicated production import path for the backend server
+  - Keeps Zeroconf registration available outside the development server path
+  - Supports both project-root and `backend/` folder execution
+
+- **Host/Client Connection Fallback**:
+
+  - Added HTTP fallback endpoints for client connection requests
+  - Host now polls pending requests if the live Socket.IO event is missed
+  - Client now polls approval status until the host responds
+  - Approval and denial can complete even when the direct socket event is delayed
+
+- **Client Button Feedback**:
+  - Added a visible connecting state for **Connect as Client**
+  - Button now shows loading text and spinner while a request is being sent
+  - Prevents duplicate clicks during connection attempts
+  - Shows clearer success and failure messages
+
+### Changed - 2026-06-19
+
+- **Windows Production Server Support**:
+
+  - Switched Windows production guidance from Gunicorn to Waitress
+  - Made backend dependencies platform-aware
+  - Kept Gunicorn for Linux/systemd deployments
+  - Defaulted Socket.IO transport to polling for Waitress compatibility
+
+- **LAN API URL Detection**:
+
+  - Frontend now rewrites localhost backend URLs to the LAN page host when opened from another device
+  - Prevents client devices from trying to connect to their own `localhost`
+  - Uploads and API calls now use the shared API resolver
+
+- **Host State Messaging**:
+  - Clarified that the red host button means hosting is active and clicking it stops hosting
+  - Added helper text telling users that clients can request access after hosting starts
+
+### Fixed - 2026-06-19
+
+- **Werkzeug Production Warning**:
+
+  - Replaced production use of `python backend/app.py` with production server commands
+  - Kept `backend/app.py` as the development-only entrypoint
+
+- **Gunicorn on Windows Failure**:
+
+  - Fixed `ModuleNotFoundError: No module named 'fcntl'` by avoiding Gunicorn on Windows
+  - Added Waitress for Windows production runs
+
+- **Waitress WebSocket Upgrade Error**:
+
+  - Fixed `RuntimeError: Cannot obtain socket from WSGI environment`
+  - Prevented the frontend from forcing WebSocket upgrades under Waitress
+
+- **Host Button / Socket.IO Reachability**:
+
+  - Added backend acknowledgements for host registration and client requests
+  - Host registration now waits for backend confirmation before showing success
+  - Better frontend errors when the backend is unreachable
+
+- **Client Request Not Reaching Host**:
+
+  - Added fallback request storage on the backend
+  - Host can now receive pending requests through polling
+  - Client no longer depends only on a single live Socket.IO event
+
+- **Responsive Layout Issues**:
+  - Improved mobile layout for connection controls, upload zone, header, and file list
+  - File table now becomes mobile-friendly stacked cards on small screens
+  - Removed leftover Vite demo CSS that could affect layout
+
 ### Planned
 
 - Mobile app support (iOS/Android)

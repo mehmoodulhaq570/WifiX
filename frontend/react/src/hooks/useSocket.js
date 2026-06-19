@@ -1,5 +1,5 @@
-import { useRef, useEffect, useState } from "react";
-import { getApiBase } from "../utils/api";
+import { useEffect, useRef } from "react";
+import { getApiBase, requestHostConnection } from "../utils/api";
 
 export const useSocket = (
   isHost,
@@ -8,7 +8,12 @@ export const useSocket = (
   onFileDeleted
 ) => {
   const socketRef = useRef(null);
+  const isHostRef = useRef(isHost);
   const requestSentRef = useRef(false);
+
+  useEffect(() => {
+    isHostRef.current = isHost;
+  }, [isHost]);
 
   const getSocketTransports = () => {
     const configured = import.meta.env.VITE_SOCKET_TRANSPORTS;
@@ -19,229 +24,250 @@ export const useSocket = (
         .filter(Boolean);
     }
 
-    // Waitress on Windows is a WSGI server and cannot expose the raw socket
-    // needed for WebSocket upgrades. Polling works on Waitress and remains
-    // compatible with Gunicorn deployments.
+    // Waitress on Windows is WSGI-only and cannot handle WebSocket upgrades.
     return ["polling"];
+  };
+
+  const waitForConnect = (socket, timeoutMs = 15000) => {
+    if (socket.connected) return Promise.resolve(true);
+
+    return new Promise((resolve) => {
+      let settled = false;
+      let timer;
+
+      const finish = (ok) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        socket.off("connect", onConnect);
+        socket.off("connect_error", onError);
+        resolve(ok);
+      };
+
+      const onConnect = () => finish(true);
+      const onError = () => finish(false);
+
+      timer = setTimeout(() => finish(false), timeoutMs);
+      socket.once("connect", onConnect);
+      socket.once("connect_error", onError);
+      socket.connect();
+    });
+  };
+
+  const emitWithAck = (socket, event, payload, timeoutMs = 10000) => {
+    return new Promise((resolve) => {
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        resolve({ ok: false, reason: "ack_timeout" });
+      }, timeoutMs);
+
+      socket.emit(event, payload, (response) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        resolve(response || { ok: true });
+      });
+    });
+  };
+
+  const attachBaseHandlers = (socket) => {
+    socket.off("connect");
+    socket.off("connect_error");
+    socket.off("disconnect");
+    socket.off("file_uploaded");
+    socket.off("file_deleted");
+
+    socket.on("connect", async () => {
+      console.log("Socket connected:", socket.id);
+      if (isHostRef.current) {
+        const ack = await emitWithAck(socket, "become_host", {
+          name: "WifiX-host",
+        });
+        if (!ack.ok) {
+          console.warn("Host re-registration failed:", ack);
+        }
+      }
+    });
+
+    socket.on("connect_error", (error) => {
+      console.error("Socket connection error:", error.message);
+    });
+
+    socket.on("disconnect", (reason) => {
+      console.log("Socket disconnected:", reason);
+      requestSentRef.current = false;
+    });
+
+    socket.on("file_uploaded", (data) => {
+      if (!data || !data.filename) return;
+      onFileUploaded(data);
+    });
+
+    socket.on("file_deleted", (data) => {
+      if (!data || !data.filename) return;
+      onFileDeleted(data.filename);
+    });
+  };
+
+  const createSocket = async () => {
+    const { io } = await import("socket.io-client");
+    const socket = io(getApiBase(), {
+      autoConnect: false,
+      transports: getSocketTransports(),
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 8,
+      timeout: 15000,
+    });
+
+    attachBaseHandlers(socket);
+    socketRef.current = socket;
+    return socket;
   };
 
   const initSocket = async () => {
     try {
-      if (socketRef.current && socketRef.current.connected) {
-        console.log("Socket already connected:", socketRef.current.id);
-        return socketRef.current;
-      }
-
-      const API_BASE = getApiBase();
-      console.log("Initializing socket connection to:", API_BASE);
-      const { io } = await import("socket.io-client");
-      const s = io(API_BASE, {
-        transports: getSocketTransports(),
-        reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionAttempts: 5,
-      });
-
-      s.on("connect", () => {
-        console.log("✅ Socket connected successfully! Socket ID:", s.id);
-      });
-
-      s.on("connect_error", (error) => {
-        console.error("❌ Socket connection error:", error.message);
-      });
-
-      s.on("disconnect", (reason) => {
-        console.log("Socket disconnected. Reason:", reason);
-        requestSentRef.current = false;
-      });
-
-      s.on("file_uploaded", (data) => {
-        // Allow ALL users to see file uploads in real-time
-        if (!data || !data.filename) return;
-        console.log("file_uploaded event received:", data);
-        onFileUploaded(data);
-      });
-
-      s.on("file_deleted", (d) => {
-        // Allow ALL users to see file deletions in real-time
-        if (!d || !d.filename) return;
-        console.log("file_deleted event received:", d);
-        onFileDeleted(d.filename);
-      });
-
-      socketRef.current = s;
-      return s;
-    } catch (e) {
-      console.warn("initSocket failed", e);
+      const socket = socketRef.current || (await createSocket());
+      await waitForConnect(socket);
+      return socket;
+    } catch (error) {
+      console.warn("initSocket failed", error);
       return null;
     }
   };
 
   const startServer = async () => {
-    console.log("🏠 startServer called");
-    if (socketRef.current && socketRef.current.connected) {
-      try {
-        console.log("📤 Emitting become_host on existing socket");
-        socketRef.current.emit("become_host", { name: `WifiX-host` });
-        return { success: true };
-      } catch (e) {
-        console.error("❌ Failed to emit become_host:", e);
-        return { success: false };
-      }
-    }
-
-    console.log("Creating new socket for host");
-    const API_BASE = getApiBase();
     try {
-      const { io } = await import("socket.io-client");
-      const s = io(API_BASE, {
-        autoConnect: true,
-        transports: getSocketTransports(),
-      });
+      const socket = socketRef.current || (await createSocket());
+      const connected = await waitForConnect(socket);
+      if (!connected) {
+        return { success: false, message: "Socket connection timeout" };
+      }
 
-      s.on("connect", () => {
-        console.log("✅ Host socket connected! Socket ID:", s.id);
-        console.log("📤 Emitting become_host");
-        s.emit("become_host", { name: `WifiX-host` });
+      const ack = await emitWithAck(socket, "become_host", {
+        name: "WifiX-host",
       });
+      if (!ack.ok) {
+        return {
+          success: false,
+          message: "Backend did not confirm host registration",
+        };
+      }
 
-      s.on("disconnect", () => {
-        console.log("Host socket disconnected");
-      });
-
-      // Setup file event listeners for the new socket
-      s.on("file_uploaded", (data) => {
-        if (!data || !data.filename) return;
-        console.log("file_uploaded event received:", data);
-        onFileUploaded(data);
-      });
-
-      s.on("file_deleted", (d) => {
-        if (!d || !d.filename) return;
-        console.log("file_deleted event received:", d);
-        onFileDeleted(d.filename);
-      });
-
-      socketRef.current = s;
       return { success: true };
-    } catch (err) {
-      console.error("❌ Failed to start server (socket connect):", err);
-      return { success: false, error: err.message };
+    } catch (error) {
+      console.error("Failed to start host socket:", error);
+      return { success: false, message: error.message };
     }
   };
 
   const stopServer = async () => {
     try {
-      const s = socketRef.current;
-      if (s && s.connected) {
-        try {
-          s.emit("stop_host", {});
-        } catch (e) {
-          console.warn("emit stop_host failed", e);
-        }
-        try {
-          s.disconnect();
-        } catch (e) {}
+      const socket = socketRef.current;
+      if (socket && socket.connected) {
+        socket.emit("stop_host", {});
+        socket.disconnect();
       }
-    } catch (e) {
-      console.warn("stopServer error", e);
+    } catch (error) {
+      console.warn("stopServer error", error);
     } finally {
       socketRef.current = null;
+      requestSentRef.current = false;
     }
   };
 
   const connectToHost = async (displayName = "Guest") => {
     try {
-      console.log("🔌 connectToHost called with displayName:", displayName);
-      const s = socketRef.current || (await initSocket());
-      if (!s) {
-        console.error("❌ Socket unavailable");
-        return { success: false, message: "Socket unavailable" };
-      }
-
-      if (!s.connected) {
-        console.log("⏳ Socket not connected yet, waiting...");
-        await new Promise((resolve) => {
-          if (s.connected) {
-            resolve();
-          } else {
-            s.once("connect", resolve);
-            setTimeout(resolve, 5000); // timeout after 5s
-          }
-        });
-      }
-
-      if (!s.connected) {
-        console.error("❌ Socket failed to connect within timeout");
+      const socket = socketRef.current || (await createSocket());
+      const connected = await waitForConnect(socket);
+      if (!connected) {
         return { success: false, message: "Connection timeout" };
       }
 
-      console.log("📤 Emitting request_connect event with name:", displayName);
-      s.emit("request_connect", { name: displayName });
+      let ack = await emitWithAck(socket, "request_connect", {
+        name: displayName,
+      });
+
+      if (!ack.ok && ack.reason === "ack_timeout") {
+        try {
+          ack = await requestHostConnection({ sid: socket.id, name: displayName });
+        } catch (error) {
+          return { success: false, message: error.message };
+        }
+      }
+
+      if (!ack.ok) {
+        if (ack.reason === "no_host") {
+          return {
+            success: false,
+            message:
+              "No host is available. Click Become Host on the host device first.",
+          };
+        }
+        if (ack.reason === "ack_timeout") {
+          return {
+            success: false,
+            message:
+              "Connection request timed out. Try again after the host is fully started.",
+          };
+        }
+        return {
+          success: false,
+          message: ack.message || "Host did not receive the request",
+        };
+      }
+
       requestSentRef.current = true;
-      console.log("✅ Connection request sent successfully");
-      return { success: true };
-    } catch (e) {
-      console.error("❌ connectToHost error:", e);
-      return { success: false, error: e.message };
+      return { success: true, requestId: ack.request_id };
+    } catch (error) {
+      console.error("connectToHost error:", error);
+      return { success: false, message: error.message };
     }
   };
 
   const setupSocketHandlers = (handlers) => {
-    const s = socketRef.current;
-    if (!s) {
-      console.warn("⚠️ Cannot setup handlers - socket not initialized");
+    const socket = socketRef.current;
+    if (!socket) {
+      console.warn("Cannot setup handlers - socket is not initialized");
       return;
     }
 
-    console.log("🔧 Setting up socket event handlers");
-
-    // Remove old listeners to prevent duplicates
-    s.off("request_approved");
-    s.off("request_denied");
-    s.off("incoming_request");
-    s.off("host_status");
+    socket.off("request_approved");
+    socket.off("request_denied");
+    socket.off("incoming_request");
+    socket.off("host_status");
 
     if (handlers.onRequestApproved) {
-      s.on("request_approved", (data) => {
-        console.log("✅ Received request_approved event:", data);
-        handlers.onRequestApproved(data);
-      });
+      socket.on("request_approved", handlers.onRequestApproved);
     }
+
     if (handlers.onRequestDenied) {
-      s.on("request_denied", (data) => {
-        console.log("❌ Received request_denied event:", data);
-        handlers.onRequestDenied(data);
-      });
+      socket.on("request_denied", handlers.onRequestDenied);
     }
+
     if (handlers.onIncomingRequest) {
-      s.on("incoming_request", (data) => {
-        console.log("📥 Received incoming_request event:", data);
-        handlers.onIncomingRequest(data);
-      });
+      socket.on("incoming_request", handlers.onIncomingRequest);
     }
+
     if (handlers.onHostStatus) {
-      s.on("host_status", (st) => {
-        console.log("📊 Received host_status event:", st);
-        handlers.onHostStatus(st);
-        // If host is not available, disconnect
-        if (st && st.available === false) {
-          console.log("Host is not available - disconnecting");
-          if (handlers.onHostDisconnected) {
-            handlers.onHostDisconnected({ reason: "host_unavailable" });
-          }
+      socket.on("host_status", (status) => {
+        handlers.onHostStatus(status);
+        if (status && status.available === false && handlers.onHostDisconnected) {
+          handlers.onHostDisconnected({ reason: "host_unavailable" });
         }
       });
     }
-
-    console.log("✅ Socket event handlers setup complete");
   };
 
   useEffect(() => {
     return () => {
       try {
         if (socketRef.current) socketRef.current.disconnect();
-      } catch (e) {}
+      } catch (error) {
+        console.warn("socket cleanup failed", error);
+      }
     };
   }, []);
 
