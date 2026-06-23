@@ -94,25 +94,63 @@ npm run dev
 
 **🖥️ Desktop App (Recommended for Personal Use):**
 
-WifiX can be packaged as a standalone desktop application using **Tauri**:
+WifiX can be packaged as a standalone Windows desktop application using
+**Tauri** with a bundled PyInstaller backend sidecar:
 
 ```powershell
-# Quick start (after Rust installation)
-.\START_TAURI.ps1
-
-# Or manually:
+# 1. Build the React frontend
 cd frontend\react
-npm run tauri:dev      # Development mode
-npm run tauri:build    # Build .exe installer
+npm.cmd run build
+
+# 2. Build the backend sidecar exe
+cd ..\..
+$frontendDist = (Resolve-Path "frontend\react\dist").Path
+python -m PyInstaller `
+  --noconfirm `
+  --clean `
+  --onedir `
+  --noconsole `
+  --name wifix-backend `
+  --distpath dist `
+  --workpath build\pyinstaller `
+  --specpath build\pyinstaller `
+  --paths backend `
+  --hidden-import engineio.async_drivers.threading `
+  --exclude-module PyQt5 `
+  --exclude-module PyQt6 `
+  --exclude-module tkinter `
+  --add-data "$frontendDist;frontend\react\dist" `
+  backend\run_backend.py
+
+# 3. Build the Windows desktop installer
+cd frontend\react
+npm.cmd run tauri:build
+```
+
+The NSIS installer is generated at:
+
+```text
+frontend\react\src-tauri\target\release\bundle\nsis\WifiX_1.0.1_x64-setup.exe
 ```
 
 📱 **Benefits:**
 
-- ✅ Single .exe file (~5 MB)
+- ✅ Windows desktop installer
 - ✅ No hosting costs
-- ✅ Python backend auto-starts
+- ✅ Bundled backend auto-starts with the app
+- ✅ No Python install required on the target PC
 - ✅ No internet required
 - ✅ Users just download and run
+- ✅ Share links open the packaged WifiX web UI on the LAN
+
+Generated build outputs are intentionally ignored by Git:
+
+```text
+build/
+dist/
+frontend/react/dist/
+frontend/react/src-tauri/target/
+```
 
 📖 **Desktop app guide:** [TAURI_DESKTOP_APP.md](TAURI_DESKTOP_APP.md)
 

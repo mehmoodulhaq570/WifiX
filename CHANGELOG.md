@@ -7,6 +7,61 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added - 2026-06-23
+
+- **Standalone Desktop Backend Bundle**:
+
+  - Added a PyInstaller backend entrypoint for building `wifix-backend`
+  - Bundled the backend sidecar into the Tauri desktop app resources
+  - Desktop app now starts the packaged backend automatically without requiring users to run Python manually
+  - Added support for packaging the built React frontend into the backend exe so browser share links open the WifiX UI instead of the Vite dev server
+
+- **WifiX Branding Assets**:
+
+  - Replaced default Tauri/Vite icons with the WifiX brand logo
+  - Regenerated Windows icon sizes, Store logo assets, app icons, and web favicon
+  - Updated the frontend document title to `WifiX`
+
+### Changed - 2026-06-23
+
+- **Desktop Build Metadata**:
+
+  - Bumped the Tauri app version to `1.0.1`
+  - Renamed the Rust package from generic `app` to `wifix`
+  - Renamed the internal Rust library from `app_lib` to `wifix_lib`
+  - Added Cargo metadata for license, repository, homepage, documentation, keywords, and categories
+
+- **Windows Desktop Packaging**:
+
+  - Switched Tauri bundling to NSIS-only to avoid MSI/WiX packaging issues
+  - Corrected the Tauri resource path for the bundled backend folder
+  - Updated the bundled backend launcher to run from its own directory so PyInstaller `_internal` files resolve correctly
+  - Added `.gitignore` rules for generated backend, frontend, Tauri, and installer artifacts
+  - Removed generated `build/` and `dist/` artifacts from Git tracking while keeping them available locally
+
+### Fixed - 2026-06-23
+
+- **Tauri Backend URL Resolution**:
+
+  - Fixed desktop frontend API calls using `http://tauri.localhost:5000`
+  - Tauri builds now use `http://127.0.0.1:5000` for the local embedded backend
+
+- **Backend Browser Share Link**:
+
+  - Fixed backend fallback redirecting LAN browser users to `http://localhost:5173`
+  - Backend now serves the packaged React frontend when included in the PyInstaller bundle
+  - Added a clear error if the packaged frontend build is missing
+
+- **Socket.IO Broadcast Compatibility**:
+
+  - Removed unsupported `broadcast=True` usage from upload and delete events
+  - File upload/delete notifications now work with the installed Socket.IO server version
+
+- **Windows Icon Refresh Issues**:
+
+  - Regenerated `icon.ico` with multiple embedded Windows sizes
+  - Updated package identity to reduce Windows taskbar/start-menu confusion with the default Tauri app identity
+
 ### Added - 2026-06-19
 
 - **Production Backend Entrypoint**:
