@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "WifiX",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "identifier": "com.wifix.desktop",
   "build": {
     "frontendDist": "../dist",
@@ -26,9 +26,9 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": "nsis",
     "resources": {
-      "../../dist/wifix-backend": "wifix-backend"
+      "../../../dist/wifix-backend": "wifix-backend"
     },
     "icon": [
       "icons/32x32.png",

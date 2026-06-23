@@ -1,4 +1,5 @@
 import os
+import sys
 import threading
 import time
 import io
@@ -61,6 +62,28 @@ FILE_TTL_SECONDS = int(os.environ.get("FILE_TTL_SECONDS", 0))  # 0 = disabled by
 CLEANUP_INTERVAL_SECONDS = int(os.environ.get("CLEANUP_INTERVAL_SECONDS", 60))
 
 ROOT_DIR = Path(__file__).parent.parent
+
+
+def _frontend_dist_dir():
+    """Find the built React frontend in source or a PyInstaller bundle."""
+    candidates = []
+    env_dist = os.environ.get("WIFIX_FRONTEND_DIST")
+    if env_dist:
+        candidates.append(Path(env_dist))
+    if getattr(sys, "frozen", False):
+        bundle_root = Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent))
+        candidates.extend([
+            bundle_root / "frontend" / "react" / "dist",
+            Path(sys.executable).parent / "frontend" / "react" / "dist",
+        ])
+    candidates.append(ROOT_DIR / "frontend" / "react" / "dist")
+
+    for candidate in candidates:
+        if (candidate / "index.html").exists():
+            return candidate
+    return None
+
+
 # Look for templates at the repository root `templates/` if present so the
 # app can still render a legacy Jinja UI when run from the backend/ folder.
 app = Flask(__name__, template_folder=str(ROOT_DIR / "templates"))
@@ -291,8 +314,9 @@ def allowed_file(filename: str) -> bool:
 @app.route('/assets/<path:filename>')
 def serve_assets(filename):
     """Serve static assets from the React build (CSS, JS, images, etc.)"""
-    dist_assets = ROOT_DIR / 'frontend' / 'react' / 'dist' / 'assets'
-    if dist_assets.exists():
+    frontend_dist = _frontend_dist_dir()
+    dist_assets = frontend_dist / 'assets' if frontend_dist else None
+    if dist_assets and dist_assets.exists():
         return send_from_directory(str(dist_assets), filename)
     return "Asset not found", 404
 
@@ -300,8 +324,8 @@ def serve_assets(filename):
 @app.route('/vite.svg')
 def serve_vite_svg():
     """Serve vite.svg from the React dist folder"""
-    dist_folder = ROOT_DIR / 'frontend' / 'react' / 'dist'
-    if dist_folder.exists():
+    dist_folder = _frontend_dist_dir()
+    if dist_folder and dist_folder.exists():
         return send_from_directory(str(dist_folder), 'vite.svg')
     return "File not found", 404
 
@@ -314,7 +338,7 @@ def index():
     it (legacy behavior). When using the React frontend during development the
     template may not exist; in that case we fall back to one of:
       1. Serve the built React app if `frontend/react/dist/index.html` exists.
-      2. Redirect to the Vite dev server at http://localhost:5173 (default).
+      2. Return a clear setup error instead of redirecting to a dev-only URL.
 
     This makes it easy to develop with the React frontend without a templates
     folder while preserving the original template-based UI as an option.
@@ -323,12 +347,14 @@ def index():
         return render_template('index.html')
     except TemplateNotFound:
         # If frontend React build exists, serve it directly (resolve from repo root)
-        built = ROOT_DIR / 'frontend' / 'react' / 'dist' / 'index.html'
-        if built.exists():
-            return send_file(str(built))
-        # Otherwise redirect to the Vite dev server (adjust via env if needed)
-        vite_url = os.environ.get('VITE_DEV_SERVER', 'http://localhost:5173')
-        return redirect(vite_url)
+        dist_folder = _frontend_dist_dir()
+        if dist_folder:
+            return send_file(str(dist_folder / 'index.html'))
+        return (
+            "WifiX frontend build was not found. Build the React app and bundle "
+            "frontend/react/dist with the backend.",
+            500,
+        )
 
 
 def _detect_lan_ip():
@@ -459,7 +485,7 @@ def upload_file():
                     'url': download_url, 
                     'size': dest.stat().st_size,
                     'has_pin': bool(file_pin)
-                }, broadcast=True)
+                })
             except Exception as e:
                 logger.error(f"Failed to emit file_uploaded event: {e}")
             return jsonify({
@@ -519,7 +545,7 @@ def delete_file(filename):
             del FILE_PINS[filename]
         logger.info(f"File deleted: {filename}")
         try:
-            socketio.emit('file_deleted', {'filename': filename}, broadcast=True)
+            socketio.emit('file_deleted', {'filename': filename})
         except Exception as e:
             logger.error(f"Failed to emit file_deleted event: {e}")
         return jsonify({'ok': True}), 200

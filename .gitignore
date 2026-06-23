@@ -19,3 +19,29 @@ venv/
 .vscode/
 
 docs_readme
+
+# Build outputs
+dist/
+build/
+frontend/react/dist/
+frontend/react/src-tauri/target/
+
+# Desktop/package artifacts
+*.exe
+*.msi
+*.dmg
+*.AppImage
+*.deb
+*.rpm
+*.zip
+
+# PyInstaller artifacts
+*.spec
+*.toc
+*.pkg
+*.pyz
+xref-*.html
+warn-*.txt
+
+# Local generated branding source
+wifix-logo.png

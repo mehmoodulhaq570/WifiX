@@ -54,9 +54,14 @@ fn start_bundled_backend(app: &tauri::App) -> Option<Child> {
         .map(|dir| dir.join("wifix-backend").join("wifix-backend.exe"))
         .filter(|path| path.exists())?;
 
+    let backend_dir = backend_exe.parent()?.to_path_buf();
+
     println!("Starting bundled WifiX backend: {:?}", backend_exe);
 
-    Command::new(backend_exe).spawn().ok()
+    Command::new(backend_exe)
+        .current_dir(backend_dir)
+        .spawn()
+        .ok()
 }
 
 fn start_python_backend(app: &tauri::App) -> Option<Child> {

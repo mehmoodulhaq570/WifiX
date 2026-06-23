@@ -2,6 +2,14 @@
 
 export const getApiBase = () => {
   try {
+    const pageHost = window.location.hostname;
+    const isTauriHost =
+      pageHost === "tauri.localhost" || pageHost.endsWith(".tauri.localhost");
+
+    if (isTauriHost) {
+      return "http://127.0.0.1:5000";
+    }
+
     const configured =
       typeof import.meta !== "undefined" &&
       import.meta.env &&
@@ -9,7 +17,6 @@ export const getApiBase = () => {
 
     if (configured) {
       const url = new URL(configured, window.location.origin);
-      const pageHost = window.location.hostname;
       const configuredHost = url.hostname;
       const configuredIsLocal =
         configuredHost === "localhost" || configuredHost === "127.0.0.1";
