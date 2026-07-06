@@ -3,18 +3,26 @@ import { useState } from "react";
 const VerifyPinModal = ({ show, filename, onVerify, onCancel }) => {
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
 
   if (!show) return null;
 
-  const handleVerify = () => {
+  const handleVerify = async () => {
     if (!pin) {
       setError("Please enter the PIN");
       return;
     }
 
-    onVerify(pin);
-    setPin("");
+    setIsVerifying(true);
     setError("");
+    try {
+      await onVerify(pin);
+      setPin("");
+    } catch (err) {
+      setError(err.message || "Invalid PIN");
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   const handleCancel = () => {
@@ -50,8 +58,8 @@ const VerifyPinModal = ({ show, filename, onVerify, onCancel }) => {
               placeholder="Enter PIN"
               className="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-slate-800 dark:text-white"
               autoFocus
-              onKeyPress={(e) => {
-                if (e.key === "Enter") handleVerify();
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !isVerifying) handleVerify();
               }}
             />
           </div>
@@ -66,15 +74,17 @@ const VerifyPinModal = ({ show, filename, onVerify, onCancel }) => {
         <div className="flex gap-3 mt-6">
           <button
             onClick={handleCancel}
+            disabled={isVerifying}
             className="flex-1 px-4 py-2 bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-700 font-medium transition"
           >
             Cancel
           </button>
           <button
             onClick={handleVerify}
-            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition"
+            disabled={isVerifying}
+            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 font-medium transition"
           >
-            Verify & Download
+            {isVerifying ? "Verifying..." : "Verify & Download"}
           </button>
         </div>
       </div>

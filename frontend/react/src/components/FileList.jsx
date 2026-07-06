@@ -1,5 +1,6 @@
 import { useState } from "react";
 import VerifyPinModal from "./VerifyPinModal";
+import { getApiBase, getDownloadUrl, verifyFilePin } from "../utils/api";
 
 const FileList = ({
   files,
@@ -11,17 +12,15 @@ const FileList = ({
 }) => {
   const [showVerifyPin, setShowVerifyPin] = useState(false);
   const [pendingDownload, setPendingDownload] = useState(null);
-  const getApiBase = () => {
-    try {
-      return (
-        (typeof import.meta !== "undefined" &&
-          import.meta.env &&
-          import.meta.env.VITE_API_URL) ||
-        window.location.origin
-      );
-    } catch (e) {
-      return window.location.origin;
-    }
+  const startDownload = (file, pin = null) => {
+    const url = new URL(getDownloadUrl(file.name));
+    if (pin) url.searchParams.set("pin", pin);
+    const link = document.createElement("a");
+    link.href = url.toString();
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
   };
 
   return (
@@ -85,7 +84,7 @@ const FileList = ({
                   setPendingDownload(file);
                   setShowVerifyPin(true);
                 } else {
-                  window.location.href = file.url;
+                  startDownload(file);
                 }
               };
 
@@ -200,7 +199,7 @@ const FileList = ({
                     setPendingDownload(file);
                     setShowVerifyPin(true);
                   } else {
-                    window.location.href = file.url;
+                    startDownload(file);
                   }
                 };
 
@@ -259,14 +258,11 @@ const FileList = ({
       <VerifyPinModal
         show={showVerifyPin}
         filename={pendingDownload?.name}
-        onVerify={(pin) => {
+        onVerify={async (pin) => {
+          if (!pendingDownload) return;
+          await verifyFilePin(pendingDownload.name, pin);
+          startDownload(pendingDownload, pin);
           setShowVerifyPin(false);
-          if (pendingDownload) {
-            // Download with PIN as query parameter
-            const url = new URL(pendingDownload.url);
-            url.searchParams.set("pin", pin);
-            window.location.href = url.toString();
-          }
           setPendingDownload(null);
         }}
         onCancel={() => {

@@ -40,6 +40,26 @@ export const getApiBase = () => {
   }
 };
 
+export const getDownloadUrl = (filename) =>
+  `${getApiBase().replace(/\/$/, "")}/download/${encodeURIComponent(filename)}`;
+
+export const verifyFilePin = async (filename, pin) => {
+  const res = await fetch(
+    `${getDownloadUrl(filename)}/verify-pin`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pin }),
+      credentials: "include",
+    }
+  );
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || !data.ok) {
+    throw new Error(data.message || "Unable to verify PIN");
+  }
+  return true;
+};
+
 export const fetchDeviceInfo = async () => {
   try {
     const infoRes = await fetch(`${getApiBase().replace(/\/$/, "")}/info`, {
@@ -64,7 +84,7 @@ export const fetchFiles = async () => {
     // normalize into local file shape
     return (items || []).map((it) => ({
       name: it.filename || it.name,
-      url: it.url || null,
+      url: getDownloadUrl(it.filename || it.name),
       size: it.size || 0,
       mtime: it.mtime ? it.mtime * 1000 : Date.now(),
       type: it.type || "file",
