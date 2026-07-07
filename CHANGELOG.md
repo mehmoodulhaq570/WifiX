@@ -546,6 +546,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Links
 
-- [GitHub Repository](https://github.com/yourusername/WifiX)
-- [Issue Tracker](https://github.com/yourusername/WifiX/issues)
-- [Documentation](https://github.com/yourusername/WifiX/tree/main/docs)
+- [GitHub Repository](https://github.com/mehmoodulhaq570/WifiX)
+- [Issue Tracker](https://github.com/mehmoodulhaq570/WifiX/issues)
+- [Documentation](https://github.com/mehmoodulhaq570/WifiX/tree/main/docs)

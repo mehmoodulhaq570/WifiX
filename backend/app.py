@@ -403,7 +403,7 @@ def list_files():
         if p.is_file():
             items.append({
                 'filename': p.name,
-                'url': url_for('download_file', filename=p.name, _external=True),
+                'url': url_for('download_file', filename=p.name),
                 'mtime': p.stat().st_mtime,
                 'size': p.stat().st_size,
                 'type': p.suffix.lower().lstrip('.') if p.suffix else '',
@@ -476,7 +476,9 @@ def upload_file():
                 FILE_PINS[saved_name] = file_pin
                 logger.info(f"PIN set for file: {saved_name}")
             
-            download_url = url_for('download_file', filename=saved_name, _external=True)
+            # Keep this host-neutral. Clients resolve it against the backend they
+            # are connected to instead of inheriting the uploader's localhost.
+            download_url = url_for('download_file', filename=saved_name)
             logger.info(f"File uploaded successfully: {saved_name} ({dest.stat().st_size} bytes)")
             # notify via socketio (if clients connected)
             try:
@@ -521,6 +523,31 @@ def download_file(filename):
             session[session_key] = True
     
     return send_from_directory(directory=str(uploads), path=filename, as_attachment=True)
+
+
+@app.route('/download/<path:filename>/verify-pin', methods=['POST'])
+@limiter.limit("30 per minute")
+def verify_file_pin(filename):
+    uploads = Path(app.config['UPLOAD_FOLDER'])
+    candidate = (uploads / filename).resolve()
+    if not str(candidate).startswith(str(uploads.resolve())) or not candidate.is_file():
+        return jsonify({'ok': False, 'error': 'file_not_found'}), 404
+
+    expected_pin = FILE_PINS.get(filename)
+    if expected_pin is None:
+        return jsonify({'ok': True})
+
+    data = request.get_json(silent=True) or {}
+    provided_pin = str(data.get('pin', '')).strip()
+    if provided_pin != expected_pin:
+        return jsonify({
+            'ok': False,
+            'error': 'invalid_pin',
+            'message': 'Invalid PIN',
+        }), 403
+
+    session[f'file_pin_{filename}'] = True
+    return jsonify({'ok': True})
 
 
 @app.route('/delete/<path:filename>', methods=['DELETE'])
