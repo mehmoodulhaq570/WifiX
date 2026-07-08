@@ -1,0 +1,13 @@
+[package]
+name = "wifix-core"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.77.2"
+authors = ["Mehmood Ul Haq"]
+description = "Shared WifiX backend logic for desktop and mobile hosts."
+license = "MIT"
+repository = "https://github.com/mehmoodulhaq570/WifiX"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "2.0"

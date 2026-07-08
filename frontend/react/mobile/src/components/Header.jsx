@@ -1,0 +1,518 @@
+import { useState, useRef, useEffect } from "react";
+import BugReportModal from "./BugReportModal";
+import UsageDashboard from "./UsageDashboard";
+
+const Header = ({ files = [], uploadingFiles = {} }) => {
+  // C: Config-driven URLs from environment variables
+  const GITHUB_REPO =
+    import.meta.env.VITE_GITHUB_REPO ||
+    "https://github.com/mehmoodulhaq570/WifiX";
+  const ISSUE_URL = `${GITHUB_REPO.replace(/\/$/, "")}/issues/new`;
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
+  const [showBugReport, setShowBugReport] = useState(false); // C: Bug report modal
+  const [showUsageDashboard, setShowUsageDashboard] = useState(false); // Usage dashboard modal
+
+  // D: Theme toggle state (persisted to localStorage)
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem("wifix-theme") || "light";
+  });
+
+  const menuRef = useRef(null);
+  const menuButtonRef = useRef(null);
+
+  // A: Close menu on click outside
+  useEffect(() => {
+    const onDocClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("click", onDocClick);
+    return () => document.removeEventListener("click", onDocClick);
+  }, []);
+
+  // A: Escape key handler for menu and modals
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === "Escape") {
+        if (showSettings) {
+          setShowSettings(false);
+          menuButtonRef.current?.focus();
+        } else if (showAbout) {
+          setShowAbout(false);
+          menuButtonRef.current?.focus();
+        } else if (showBugReport) {
+          setShowBugReport(false);
+          menuButtonRef.current?.focus();
+        } else if (showUsageDashboard) {
+          setShowUsageDashboard(false);
+          menuButtonRef.current?.focus();
+        } else if (menuOpen) {
+          setMenuOpen(false);
+        }
+      }
+    };
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [menuOpen, showSettings, showAbout, showBugReport, showUsageDashboard]);
+
+  // D: Apply theme to document and persist
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    localStorage.setItem("wifix-theme", theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+  };
+
+  return (
+    <>
+      <header className="relative w-full bg-gradient-to-r from-blue-600 to-cyan-500 px-4 py-6 sm:py-8 text-center text-white shadow-lg rounded-b-2xl md:rounded-b-3xl">
+        {/* Three-dot menu (top-right) */}
+        <div ref={menuRef} className="absolute top-3 right-4">
+          <div className="relative">
+            <button
+              ref={menuButtonRef}
+              onClick={() => setMenuOpen((s) => !s)}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              aria-label="Open menu"
+              className="p-2 bg-white/10 hover:bg-white/20 rounded-md focus:outline-none focus:ring-2 focus:ring-white transition"
+              title="Menu"
+            >
+              {/* Three-dot icon (vertical) */}
+              <svg
+                className="w-6 h-6 text-white"
+                fill="currentColor"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="5" r="2" />
+                <circle cx="12" cy="12" r="2" />
+                <circle cx="12" cy="19" r="2" />
+              </svg>
+            </button>
+
+            {menuOpen && (
+              <div
+                role="menu"
+                aria-label="Menu options"
+                className="fixed mt-2 w-52 bg-white text-gray-900 rounded-md shadow-xl right-4 z-50 ring-1 ring-black ring-opacity-5"
+              >
+                <button
+                  role="menuitem"
+                  onClick={() => {
+                    setShowSettings(true);
+                    setMenuOpen(false);
+                  }}
+                  className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm hover:bg-gray-100 transition"
+                >
+                  {/* B: Settings SVG icon */}
+                  <svg
+                    className="w-5 h-5 flex-shrink-0 text-slate-700 dark:text-slate-200"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                  <span>Settings</span>
+                </button>
+                <button
+                  role="menuitem"
+                  onClick={() => {
+                    setShowAbout(true);
+                    setMenuOpen(false);
+                  }}
+                  className="flex items-center gap-3 w-full text-left px-4 py-3 text-sm hover:bg-gray-100 border-t transition"
+                >
+                  {/* B: About SVG icon */}
+                  <svg
+                    className="w-5 h-5 flex-shrink-0 text-blue-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <span>About</span>
+                </button>
+                <button
+                  role="menuitem"
+                  onClick={() => {
+                    setShowUsageDashboard(true);
+                    setMenuOpen(false);
+                  }}
+                  className="flex items-center gap-2 w-full text-left px-4 py-3 text-sm hover:bg-gray-100 border-t transition"
+                >
+                  <svg
+                    className="w-5 h-5 text-purple-600 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                    />
+                  </svg>
+                  <span className="ml-1">Usage & Statistics</span>
+                </button>
+                <button
+                  role="menuitem"
+                  onClick={() => {
+                    setShowBugReport(true);
+                    setMenuOpen(false);
+                  }}
+                  className="flex items-center gap-2 w-full text-left px-4 py-3 text-sm hover:bg-gray-100 border-t transition"
+                >
+                  <svg
+                    className="w-5 h-5 text-red-600 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                  <span className="ml-1">Report Bug/Error</span>
+                </button>
+                <a
+                  role="menuitem"
+                  href={GITHUB_REPO}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-3 text-sm hover:bg-gray-100 border-t transition"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  <svg
+                    className="w-5 h-5 flex-shrink-0"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
+                    <path d="M12 .5C5.73.5.75 5.48.75 11.74c0 4.92 3.19 9.09 7.61 10.57.56.1.77-.24.77-.54 0-.27-.01-1-.02-1.96-3.09.67-3.74-1.49-3.74-1.49-.5-1.28-1.22-1.62-1.22-1.62-.99-.68.08-.67.08-.67 1.1.08 1.68 1.13 1.68 1.13.97 1.67 2.55 1.19 3.17.91.1-.71.38-1.19.69-1.46-2.47-.28-5.07-1.24-5.07-5.5 0-1.22.44-2.22 1.15-3.01-.12-.28-.5-1.4.11-2.91 0 0 .94-.3 3.07 1.15.89-.25 1.84-.37 2.79-.38.95.01 1.9.13 2.79.38 2.13-1.45 3.07-1.15 3.07-1.15.61 1.51.23 2.63.11 2.91.71.79 1.15 1.79 1.15 3.01 0 4.27-2.6 5.21-5.08 5.49.39.34.73 1.03.73 2.08 0 1.5-.01 2.71-.01 3.08 0 .3.21.65.78.54C19.06 20.83 22.25 16.66 22.25 11.74 22.25 5.48 17.27.5 12 .5z" />
+                  </svg>
+                  <span className="ml-1">GitHub Repository</span>
+                </a>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="max-w-3xl mx-auto pr-10 sm:pr-0">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
+            WifiX Transfer
+          </h1>
+          <p className="opacity-90 text-sm md:text-base">
+            Share your files wirelessly and securely
+          </p>
+        </div>
+      </header>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="settings-title"
+        >
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl max-w-md w-full p-4 sm:p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2
+                id="settings-title"
+                className="text-2xl font-bold text-gray-900 dark:text-white"
+              >
+                Settings
+              </h2>
+              <button
+                onClick={() => {
+                  setShowSettings(false);
+                  menuButtonRef.current?.focus();
+                }}
+                aria-label="Close settings"
+                className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className="space-y-4 text-gray-800 dark:text-gray-100">
+              {/* D: Theme toggle */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 bg-slate-50 dark:bg-slate-800 rounded-lg shadow-sm border border-blue-100 dark:border-slate-600">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white dark:bg-slate-900 rounded-lg shadow-sm">
+                    {theme === "dark" ? (
+                      <svg
+                        className="w-5 h-5 text-blue-500"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                      </svg>
+                    ) : (
+                      <svg
+                        className="w-5 h-5 text-amber-500"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-base text-gray-900 dark:text-white">
+                      Appearance
+                    </p>
+                    <p className="text-xs text-slate-600 dark:text-slate-200">
+                      {theme === "dark" ? "Dark" : "Light"} mode
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={toggleTheme}
+                  className="relative inline-flex h-8 w-16 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-500/30 shadow-lg"
+                  style={{
+                    backgroundColor: theme === "dark" ? "#3b82f6" : "#f59e0b",
+                  }}
+                  aria-label={`Switch to ${
+                    theme === "dark" ? "light" : "dark"
+                  } mode`}
+                >
+                  <span
+                    className={`inline-flex items-center justify-center h-7 w-7 transform rounded-full bg-white transition-all duration-300 shadow-md ${
+                      theme === "dark" ? "translate-x-8" : "translate-x-0.5"
+                    }`}
+                  >
+                    {theme === "dark" ? (
+                      <svg
+                        className="w-4 h-4 text-blue-600"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+                      </svg>
+                    ) : (
+                      <svg
+                        className="w-4 h-4 text-amber-500"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    )}
+                  </span>
+                </button>
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs text-slate-600 dark:text-slate-300">
+                  More options coming soon:
+                </p>
+                <ul className="list-disc ml-5 text-sm space-y-1">
+                  <li>Network settings</li>
+                  <li>File retention period</li>
+                  <li>Upload limits</li>
+                </ul>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setShowSettings(false);
+                menuButtonRef.current?.focus();
+              }}
+              className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* About Modal */}
+      {showAbout && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black dark:bg-opacity-70 flex items-center justify-center z-50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="about-title"
+        >
+          <div className="bg-white dark:bg-slate-900 rounded-lg shadow-xl dark:shadow-blue-900/30 max-w-md w-full p-4 sm:p-6 border-0 dark:border dark:border-slate-700">
+            <div className="flex justify-between items-center mb-4">
+              <h2
+                id="about-title"
+                className="text-2xl font-bold text-gray-900 dark:text-white"
+              >
+                About WifiX
+              </h2>
+              <button
+                onClick={() => {
+                  setShowAbout(false);
+                  menuButtonRef.current?.focus();
+                }}
+                aria-label="Close about"
+                className="text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className="space-y-4 text-slate-700 dark:text-slate-200">
+              <p className="text-sm">
+                <strong>WifiX Transfer</strong> is a local area network (LAN)
+                file sharing application that lets you share files wirelessly
+                between devices on the same network.
+              </p>
+              <div className="space-y-2">
+                <p className="text-sm">
+                  <strong>Version:</strong> 1.0.0
+                </p>
+                <p className="text-sm">
+                  <strong>Tech Stack:</strong>
+                </p>
+                <ul className="list-disc ml-5 text-sm space-y-1">
+                  <li>Backend: Python Flask + Socket.IO</li>
+                  <li>Frontend: React + Vite + Tailwind CSS</li>
+                  <li>Real-time sync via WebSockets</li>
+                </ul>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-4">
+                © 2025 WifiX Transfer. Open source project.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setShowAbout(false);
+                menuButtonRef.current?.focus();
+              }}
+              className="mt-6 w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Usage Dashboard Modal */}
+      {showUsageDashboard && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowUsageDashboard(false)}
+        >
+          <div
+            className="bg-white dark:bg-slate-900 rounded-lg shadow-2xl dark:shadow-blue-900/30 max-w-4xl w-full max-h-[90vh] overflow-y-auto border-0 dark:border dark:border-slate-700"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 p-4 flex items-center justify-between gap-3 rounded-t-lg z-10">
+              <h2 className="text-base sm:text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2 min-w-0">
+                <svg
+                  className="w-6 h-6 text-purple-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  />
+                </svg>
+                Usage & Statistics
+              </h2>
+              <button
+                onClick={() => setShowUsageDashboard(false)}
+                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                aria-label="Close usage dashboard"
+              >
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div className="p-4 sm:p-6">
+              <UsageDashboard files={files} uploadingFiles={uploadingFiles} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bug Report Modal */}
+      <BugReportModal
+        show={showBugReport}
+        onClose={() => {
+          setShowBugReport(false);
+          menuButtonRef.current?.focus();
+        }}
+        githubRepo={GITHUB_REPO}
+      />
+    </>
+  );
+};
+
+export default Header;

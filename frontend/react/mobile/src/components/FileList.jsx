@@ -1,0 +1,277 @@
+import { useState } from "react";
+import VerifyPinModal from "./VerifyPinModal";
+import { getApiBase, getDownloadUrl, verifyFilePin } from "../utils/api";
+
+const FileList = ({
+  files,
+  statusMsg,
+  qrUrl,
+  qrVisible,
+  onDelete,
+  uploadingFiles = {},
+}) => {
+  const [showVerifyPin, setShowVerifyPin] = useState(false);
+  const [pendingDownload, setPendingDownload] = useState(null);
+  const startDownload = (file, pin = null) => {
+    const url = new URL(getDownloadUrl(file.name));
+    if (pin) url.searchParams.set("pin", pin);
+    const link = document.createElement("a");
+    link.href = url.toString();
+    link.download = file.name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
+  return (
+    <section className="w-full bg-white dark:bg-slate-900 rounded-lg shadow-sm dark:shadow-blue-900/20 p-4 sm:p-5 md:p-6 mt-4 md:mt-6 border border-slate-200 dark:border-slate-800 min-w-0">
+      <h2 className="text-lg md:text-xl font-bold text-blue-600 mb-4 border-b pb-2">
+        Available Files
+      </h2>
+
+      {/* status and QR area */}
+      <div className="mb-4">
+        <div className="text-sm text-slate-600 dark:text-slate-200">
+          {statusMsg}
+        </div>
+        {qrUrl && qrVisible ? (
+          <div className="mt-3 flex justify-center">
+            <img
+              alt="qr"
+              src={`${getApiBase().replace(
+                /\/$/,
+                ""
+              )}/qr?url=${encodeURIComponent(qrUrl)}`}
+              className="w-40 h-40"
+            />
+          </div>
+        ) : null}
+      </div>
+
+      {(files.length > 0 || Object.keys(uploadingFiles).length > 0) ? (
+        <>
+          <div className="md:hidden space-y-3">
+            {Object.entries(uploadingFiles).map(([filename, uploadInfo]) => (
+              <div
+                key={`mobile-uploading-${filename}`}
+                className="rounded-lg border border-blue-100 bg-blue-50 dark:border-slate-700 dark:bg-slate-800 p-3"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <span className="font-medium break-all text-sm">{filename}</span>
+                  <span className="font-semibold text-blue-600 text-sm shrink-0">
+                    {uploadInfo.progress}%
+                  </span>
+                </div>
+                <div className="mt-3 w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2.5">
+                  <div
+                    className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                    style={{ width: `${uploadInfo.progress}%` }}
+                  ></div>
+                </div>
+                <div className="mt-2 text-xs text-slate-500 dark:text-slate-300 flex justify-between gap-3">
+                  <span>{uploadInfo.speed}</span>
+                  <span>
+                    {(uploadInfo.loaded / 1024 / 1024).toFixed(2)} MB /{" "}
+                    {(uploadInfo.total / 1024 / 1024).toFixed(2)} MB
+                  </span>
+                </div>
+              </div>
+            ))}
+
+            {files.map((file) => {
+              const handleDownload = () => {
+                if (file.has_pin) {
+                  setPendingDownload(file);
+                  setShowVerifyPin(true);
+                } else {
+                  startDownload(file);
+                }
+              };
+
+              return (
+                <div
+                  key={`mobile-${file.name}`}
+                  className="rounded-lg border border-slate-200 dark:border-slate-700 p-3"
+                >
+                  <div className="flex items-start gap-2">
+                    {file.has_pin && (
+                      <span
+                        className="text-yellow-600 dark:text-yellow-400 shrink-0"
+                        title="PIN Protected"
+                      >
+                        ðŸ”’
+                      </span>
+                    )}
+                    <span className="font-semibold text-sm break-all min-w-0">
+                      {file.name}
+                    </span>
+                  </div>
+                  <div className="mt-2 grid grid-cols-1 gap-1 text-xs text-slate-600 dark:text-slate-300">
+                    <span>{(file.size / 1024).toFixed(2)} KB</span>
+                    <span>{file.type}</span>
+                    <span>{new Date(file.mtime).toLocaleString()}</span>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    <button
+                      onClick={handleDownload}
+                      className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-md text-sm"
+                    >
+                      Download
+                    </button>
+                    <button
+                      onClick={() => onDelete(file.name)}
+                      className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-md text-sm"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="hidden md:block overflow-x-auto">
+          <table className="w-full border-collapse text-sm sm:text-base">
+            <thead>
+              <tr className="bg-blue-500 text-white text-left">
+                <th className="p-3">Name</th>
+                <th className="p-3">Size</th>
+                <th className="p-3">Last Modified</th>
+                <th className="p-3">Type</th>
+                <th className="p-3 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {/* Show currently uploading files first */}
+              {Object.entries(uploadingFiles).map(([filename, uploadInfo]) => (
+                <tr
+                  key={`uploading-${filename}`}
+                  className="border-b bg-blue-50 dark:bg-slate-800"
+                >
+                  <td className="p-3" colSpan="5">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <svg
+                            className="w-5 h-5 text-blue-600 animate-spin"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                            />
+                          </svg>
+                          <span className="font-medium">{filename}</span>
+                        </div>
+                        <div className="flex items-center gap-4 text-sm">
+                          <span className="text-slate-600 dark:text-slate-200">
+                            {uploadInfo.speed}
+                          </span>
+                          <span className="font-semibold text-blue-600">
+                            {uploadInfo.progress}%
+                          </span>
+                        </div>
+                      </div>
+                      {/* Progress bar */}
+                      <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2.5">
+                        <div
+                          className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadInfo.progress}%` }}
+                        ></div>
+                      </div>
+                      <div className="text-xs text-slate-500 dark:text-slate-300">
+                        {(uploadInfo.loaded / 1024 / 1024).toFixed(2)} MB /{" "}
+                        {(uploadInfo.total / 1024 / 1024).toFixed(2)} MB
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+
+              {/* Show existing files */}
+              {files.map((file) => {
+                const handleDownload = () => {
+                  if (file.has_pin) {
+                    setPendingDownload(file);
+                    setShowVerifyPin(true);
+                  } else {
+                    startDownload(file);
+                  }
+                };
+
+                return (
+                  <tr
+                    key={file.name}
+                    className="border-b hover:bg-blue-50 dark:hover:bg-gray-700 transition"
+                  >
+                    <td className="p-3">
+                      <div className="flex items-center gap-2">
+                        {file.has_pin && (
+                          <span
+                            className="text-yellow-600 dark:text-yellow-400"
+                            title="PIN Protected"
+                          >
+                            🔒
+                          </span>
+                        )}
+                        <span>{file.name}</span>
+                      </div>
+                    </td>
+                    <td className="p-3">{(file.size / 1024).toFixed(2)} KB</td>
+                    <td className="p-3 whitespace-nowrap">
+                      {new Date(file.mtime).toLocaleString()}
+                    </td>
+                    <td className="p-3">{file.type}</td>
+                    <td className="p-3 text-center">
+                      <div className="flex gap-2 justify-center">
+                        <button
+                          onClick={handleDownload}
+                          className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md text-sm sm:text-base"
+                        >
+                          Download
+                        </button>
+                        <button
+                          onClick={() => onDelete(file.name)}
+                          className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-sm sm:text-base"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          </div>
+        </>
+      ) : (
+        <div className="p-6 text-center text-gray-500">
+          No files found in the shared folder.
+        </div>
+      )}
+
+      <VerifyPinModal
+        show={showVerifyPin}
+        filename={pendingDownload?.name}
+        onVerify={async (pin) => {
+          if (!pendingDownload) return;
+          await verifyFilePin(pendingDownload.name, pin);
+          startDownload(pendingDownload, pin);
+          setShowVerifyPin(false);
+          setPendingDownload(null);
+        }}
+        onCancel={() => {
+          setShowVerifyPin(false);
+          setPendingDownload(null);
+        }}
+      />
+    </section>
+  );
+};
+
+export default FileList;
