@@ -24,3 +24,39 @@ pub fn verify_file_pin(state: &WifixState, filename: &str, provided_pin: &str) -
         None => true,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn files_without_pin_verify_successfully() {
+        let state = WifixState::new("uploads");
+
+        assert!(verify_file_pin(&state, "demo.txt", ""));
+        assert!(!has_file_pin(&state, "demo.txt"));
+    }
+
+    #[test]
+    fn files_with_pin_require_matching_pin() {
+        let state = WifixState::new("uploads");
+
+        set_file_pin(&state, "demo.txt", "1234");
+
+        assert!(has_file_pin(&state, "demo.txt"));
+        assert!(verify_file_pin(&state, "demo.txt", "1234"));
+        assert!(verify_file_pin(&state, "demo.txt", " 1234 "));
+        assert!(!verify_file_pin(&state, "demo.txt", "0000"));
+    }
+
+    #[test]
+    fn empty_pin_removes_existing_pin() {
+        let state = WifixState::new("uploads");
+
+        set_file_pin(&state, "demo.txt", "1234");
+        set_file_pin(&state, "demo.txt", "");
+
+        assert!(!has_file_pin(&state, "demo.txt"));
+        assert!(verify_file_pin(&state, "demo.txt", ""));
+    }
+}

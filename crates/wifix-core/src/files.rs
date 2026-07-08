@@ -68,16 +68,80 @@ pub fn list_files(state: &WifixState) -> io::Result<Vec<FileInfo>> {
             .ok()
             .and_then(|time| time.duration_since(UNIX_EPOCH).ok())
             .map(|duration| duration.as_secs());
+        let mtime = metadata
+            .modified()
+            .ok()
+            .and_then(|time| time.duration_since(UNIX_EPOCH).ok())
+            .map(|duration| duration.as_secs_f64());
+        let file_type = entry
+            .path()
+            .extension()
+            .map(|extension| extension.to_string_lossy().to_ascii_lowercase())
+            .unwrap_or_default();
 
         files.push(FileInfo {
+            filename: name.clone(),
             url: format!("/download/{name}"),
             has_pin: has_file_pin(state, &name),
             name,
             size: metadata.len(),
+            mtime,
             modified,
+            r#type: file_type,
         });
     }
 
-    files.sort_by(|a, b| a.name.to_lowercase().cmp(&b.name.to_lowercase()));
+    files.sort_by(|a, b| b.modified.cmp(&a.modified));
     Ok(files)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    use super::*;
+
+    #[test]
+    fn safe_filename_keeps_common_file_name_characters() {
+        assert_eq!(safe_filename("photo-01_final.png"), "photo-01_final.png");
+    }
+
+    #[test]
+    fn safe_filename_replaces_unsafe_characters() {
+        assert_eq!(safe_filename("../my file?.zip"), "my_file_.zip");
+    }
+
+    #[test]
+    fn allowed_file_rejects_empty_names() {
+        assert!(allowed_file("report.pdf"));
+        assert!(!allowed_file(""));
+        assert!(!allowed_file("   "));
+    }
+
+    #[test]
+    fn list_files_returns_sorted_metadata() {
+        let root = std::env::temp_dir().join(format!(
+            "wifix-core-files-test-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(&root).unwrap();
+        fs::write(root.join("zeta.txt"), b"123").unwrap();
+        fs::write(root.join("alpha.txt"), b"12345").unwrap();
+
+        let state = WifixState::new(&root);
+        let files = list_files(&state).unwrap();
+
+        assert_eq!(files.len(), 2);
+        assert!(files.iter().any(|file| {
+            file.name == "alpha.txt"
+                && file.filename == "alpha.txt"
+                && file.size == 5
+                && file.url == "/download/alpha.txt"
+                && file.r#type == "txt"
+        }));
+        assert!(files.iter().any(|file| file.name == "zeta.txt"));
+
+        fs::remove_dir_all(root).unwrap();
+    }
 }

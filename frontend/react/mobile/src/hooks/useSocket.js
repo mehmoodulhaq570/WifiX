@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { getApiBase, requestHostConnection } from "../utils/api";
+import { getApiBase, isMobileTauri, requestHostConnection } from "../utils/api";
 
 export const useSocket = (
   isHost,
@@ -140,6 +140,10 @@ export const useSocket = (
 
   const startServer = async () => {
     try {
+      if (isMobileTauri()) {
+        return { success: true };
+      }
+
       const socket = socketRef.current || (await createSocket());
       const connected = await waitForConnect(socket);
       if (!connected) {
@@ -180,6 +184,16 @@ export const useSocket = (
 
   const connectToHost = async (displayName = "Guest") => {
     try {
+      if (isMobileTauri()) {
+        try {
+          const ack = await requestHostConnection({ name: displayName });
+          requestSentRef.current = true;
+          return { success: true, requestId: ack.request_id };
+        } catch (error) {
+          return { success: false, message: error.message };
+        }
+      }
+
       const socket = socketRef.current || (await createSocket());
       const connected = await waitForConnect(socket);
       if (!connected) {

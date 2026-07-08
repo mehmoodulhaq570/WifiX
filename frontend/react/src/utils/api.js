@@ -1,5 +1,16 @@
 // API helper functions
 
+export const isMobileTauri = () => {
+  try {
+    const pageHost = window.location.hostname;
+    const isTauriHost =
+      pageHost === "tauri.localhost" || pageHost.endsWith(".tauri.localhost");
+    return isTauriHost && /Android/i.test(navigator.userAgent || "");
+  } catch (e) {
+    return false;
+  }
+};
+
 export const getApiBase = () => {
   try {
     const pageHost = window.location.hostname;
@@ -70,6 +81,20 @@ export const fetchDeviceInfo = async () => {
     }
   } catch (e) {
     console.warn("fetch /info failed", e);
+  }
+  return null;
+};
+
+export const waitForDeviceInfo = async ({
+  attempts = 8,
+  delayMs = 400,
+} = {}) => {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const info = await fetchDeviceInfo();
+    if (info) return info;
+    if (attempt < attempts - 1) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
   }
   return null;
 };

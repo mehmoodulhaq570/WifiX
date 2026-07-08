@@ -25,6 +25,9 @@ dist/
 build/
 frontend/react/dist/
 frontend/react/src-tauri/target/
+frontend/react/mobile/dist/
+frontend/react/mobile/src-tauri/target/
+crates/*/target/
 
 # Desktop/package artifacts
 *.exe

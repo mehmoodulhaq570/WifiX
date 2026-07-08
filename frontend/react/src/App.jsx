@@ -22,9 +22,11 @@ import { useAuth } from "./hooks/useAuth";
 // Utils
 import {
   fetchDeviceInfo,
+  waitForDeviceInfo,
   fetchFiles,
   deleteFile,
   getApiBase,
+  isMobileTauri,
   fetchPendingConnectionRequests,
   respondToConnectionRequest,
   fetchConnectionRequestStatus,
@@ -232,7 +234,9 @@ function App() {
   // Server control handlers
   const handleStartServer = async () => {
     setStatusMsg("Starting host...");
-    const backendInfo = await fetchDeviceInfo();
+    const backendInfo = isMobileTauri()
+      ? await waitForDeviceInfo()
+      : await fetchDeviceInfo();
     if (!backendInfo) {
       const message = `Backend is not reachable at ${getApiBase()}. Start the backend and refresh the frontend.`;
       setStatusMsg(message);
@@ -269,16 +273,18 @@ function App() {
     setStatusMsg("Sending connection request to host...");
 
     try {
-      // Ensure socket is initialized and handlers are set up before connecting
-      const socket = socketRef.current || (await initSocket());
-      if (!socket) {
-        setStatusMsg("Failed to initialize socket connection");
-        toast.error("Could not initialize client connection.");
-        return;
-      }
+      if (!isMobileTauri()) {
+        // Ensure socket is initialized and handlers are set up before connecting
+        const socket = socketRef.current || (await initSocket());
+        if (!socket) {
+          setStatusMsg("Failed to initialize socket connection");
+          toast.error("Could not initialize client connection.");
+          return;
+        }
 
-      // Setup handlers if not already done
-      setupSocketHandlers(getConnectionHandlers());
+        // Setup handlers if not already done
+        setupSocketHandlers(getConnectionHandlers());
+      }
 
       // Now connect
       const result = await socketConnectToHost();
