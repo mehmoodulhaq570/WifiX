@@ -26,6 +26,7 @@ import {
   fetchFiles,
   deleteFile,
   getApiBase,
+  isHttpOnlyBackend,
   isMobileTauri,
   fetchPendingConnectionRequests,
   respondToConnectionRequest,
@@ -141,7 +142,7 @@ function App() {
     if (info) {
       setDeviceInfo((d) => ({ ...d, ...info }));
     }
-    if (isMobileTauri()) {
+    if (await isHttpOnlyBackend()) {
       return;
     }
 
@@ -249,7 +250,7 @@ function App() {
     const result = await socketStartServer();
     if (result.success) {
       setIsHost(true);
-      if (!isMobileTauri()) {
+      if (!(await isHttpOnlyBackend())) {
         setupSocketHandlers(getConnectionHandlers());
       }
       setDeviceInfo((d) => ({ ...d, ...backendInfo }));
@@ -285,7 +286,7 @@ function App() {
     setStatusMsg("Sending connection request to host...");
 
     try {
-      if (!isMobileTauri()) {
+      if (!(await isHttpOnlyBackend())) {
         // Ensure socket is initialized and handlers are set up before connecting
         const socket = socketRef.current || (await initSocket());
         if (!socket) {

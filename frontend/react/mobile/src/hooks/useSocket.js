@@ -1,5 +1,10 @@
 import { useEffect, useRef } from "react";
-import { getApiBase, isMobileTauri, requestHostConnection } from "../utils/api";
+import {
+  getApiBase,
+  isHttpOnlyBackend,
+  isMobileTauri,
+  requestHostConnection,
+} from "../utils/api";
 
 export const useSocket = (
   isHost,
@@ -112,7 +117,7 @@ export const useSocket = (
   };
 
   const createSocket = async () => {
-    if (isMobileTauri()) {
+    if (await isHttpOnlyBackend()) {
       return null;
     }
 
@@ -133,7 +138,7 @@ export const useSocket = (
 
   const initSocket = async () => {
     try {
-      if (isMobileTauri()) {
+      if (await isHttpOnlyBackend()) {
         return null;
       }
 
@@ -148,7 +153,7 @@ export const useSocket = (
 
   const startServer = async () => {
     try {
-      if (isMobileTauri()) {
+      if (await isHttpOnlyBackend()) {
         return { success: true };
       }
 
@@ -192,7 +197,7 @@ export const useSocket = (
 
   const connectToHost = async (displayName = "Guest") => {
     try {
-      if (isMobileTauri()) {
+      if (await isHttpOnlyBackend()) {
         try {
           const ack = await requestHostConnection({ name: displayName });
           requestSentRef.current = true;
@@ -205,7 +210,13 @@ export const useSocket = (
       const socket = socketRef.current || (await createSocket());
       const connected = await waitForConnect(socket);
       if (!connected) {
-        return { success: false, message: "Connection timeout" };
+        try {
+          const ack = await requestHostConnection({ name: displayName });
+          requestSentRef.current = true;
+          return { success: true, requestId: ack.request_id };
+        } catch (error) {
+          return { success: false, message: "Connection timeout" };
+        }
       }
 
       let ack = await emitWithAck(socket, "request_connect", {

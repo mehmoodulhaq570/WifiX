@@ -4,23 +4,26 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use axum::{
     body::Body,
     extract::{Multipart, Path as RoutePath, Query, State},
-    http::{header, HeaderMap, HeaderValue, Method, StatusCode},
+    http::{header, HeaderMap, HeaderValue, Method, StatusCode, Uri},
     response::{IntoResponse, Response},
     routing::{delete, get, post},
     Json, Router,
 };
+use include_dir::{include_dir, Dir};
 use qrcode::{render::svg, QrCode};
 use serde::{Deserialize, Serialize};
 use tower_http::cors::{AllowHeaders, AllowOrigin, CorsLayer};
 
 use crate::ip::detect_lan_ip;
 use wifix_core::{
-    allowed_file, list_files, resolve_upload_path, safe_filename, set_file_pin, verify_file_pin,
-    remove_file_pin, ConnectionRequest, ConnectionStatus, EventSnapshot, FileInfo, RequestDecision,
+    allowed_file, list_files, remove_file_pin, resolve_upload_path, safe_filename, set_file_pin,
+    verify_file_pin, ConnectionRequest, ConnectionStatus, EventSnapshot, FileInfo, RequestDecision,
     WifixState,
 };
 
 static REQUEST_COUNTER: AtomicU64 = AtomicU64::new(1);
+static MOBILE_WEB_DIST: Dir<'_> =
+    include_dir!("$CARGO_MANIFEST_DIR/../../frontend/react/mobile/dist");
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct HealthResponse {
@@ -118,6 +121,7 @@ pub struct QrQuery {
 
 pub fn app(state: WifixState) -> Router {
     Router::new()
+        .route("/", get(index))
         .route("/health", get(health))
         .route("/info", get(info))
         .route("/qr", get(qr))
@@ -129,13 +133,67 @@ pub fn app(state: WifixState) -> Router {
         .route("/connect/request", post(create_connection_request))
         .route("/connect/pending", get(list_pending_connection_requests))
         .route("/connect/respond", post(respond_connection_request))
-        .route("/connect/status/:request_id", get(get_connection_request_status))
+        .route(
+            "/connect/status/:request_id",
+            get(get_connection_request_status),
+        )
         .route("/upload", post(upload))
         .route("/download/:filename", get(download))
         .route("/download/:filename/verify-pin", post(verify_pin))
         .route("/delete/:filename", delete(delete_file))
+        .fallback(static_asset)
         .layer(cors_layer())
         .with_state(state)
+}
+
+async fn index() -> Response {
+    serve_embedded_asset("index.html")
+}
+
+async fn static_asset(uri: Uri) -> Response {
+    let path = uri.path().trim_start_matches('/');
+    if path.is_empty() {
+        return serve_embedded_asset("index.html");
+    }
+
+    if path.contains("..") || path.contains('\\') {
+        return StatusCode::NOT_FOUND.into_response();
+    }
+
+    match MOBILE_WEB_DIST.get_file(path) {
+        Some(_) => serve_embedded_asset(path),
+        None => serve_embedded_asset("index.html"),
+    }
+}
+
+fn serve_embedded_asset(path: &str) -> Response {
+    let Some(file) = MOBILE_WEB_DIST.get_file(path) else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+
+    let content_type = content_type_for(path);
+    (
+        [(header::CONTENT_TYPE, content_type)],
+        Body::from(file.contents()),
+    )
+        .into_response()
+}
+
+fn content_type_for(path: &str) -> &'static str {
+    match path.rsplit('.').next().unwrap_or_default() {
+        "css" => "text/css; charset=utf-8",
+        "html" => "text/html; charset=utf-8",
+        "ico" => "image/x-icon",
+        "js" => "text/javascript; charset=utf-8",
+        "json" => "application/json; charset=utf-8",
+        "png" => "image/png",
+        "svg" => "image/svg+xml; charset=utf-8",
+        "txt" => "text/plain; charset=utf-8",
+        "webp" => "image/webp",
+        "woff" => "font/woff",
+        "woff2" => "font/woff2",
+        _ => "application/octet-stream",
+    }
 }
 
 fn cors_layer() -> CorsLayer {
@@ -168,7 +226,9 @@ async fn info() -> Json<InfoResponse> {
 }
 
 async fn qr(Query(query): Query<QrQuery>) -> Response {
-    let target = query.url.unwrap_or_else(|| "http://127.0.0.1:5000/".to_string());
+    let target = query
+        .url
+        .unwrap_or_else(|| "http://127.0.0.1:5000/".to_string());
 
     match QrCode::new(target.as_bytes()) {
         Ok(code) => {
@@ -179,7 +239,11 @@ async fn qr(Query(query): Query<QrQuery>) -> Response {
                 .light_color(svg::Color("#ffffff"))
                 .build();
 
-            ([(header::CONTENT_TYPE, "image/svg+xml; charset=utf-8")], image).into_response()
+            (
+                [(header::CONTENT_TYPE, "image/svg+xml; charset=utf-8")],
+                image,
+            )
+                .into_response()
         }
         Err(_) => (
             StatusCode::INTERNAL_SERVER_ERROR,
@@ -196,7 +260,10 @@ async fn files(State(state): State<WifixState>) -> Json<Vec<FileInfo>> {
     Json(list_files(&state).unwrap_or_default())
 }
 
-async fn auth_status(State(state): State<WifixState>, headers: HeaderMap) -> Json<AuthStatusResponse> {
+async fn auth_status(
+    State(state): State<WifixState>,
+    headers: HeaderMap,
+) -> Json<AuthStatusResponse> {
     let pin_required = state.pin_required();
     Json(AuthStatusResponse {
         pin_required,
@@ -368,7 +435,11 @@ async fn upload(State(state): State<WifixState>, mut multipart: Multipart) -> Re
                 file_bytes = Some(bytes);
             }
             "pin" => {
-                pin = field.text().await.ok().map(|value| value.trim().to_string());
+                pin = field
+                    .text()
+                    .await
+                    .ok()
+                    .map(|value| value.trim().to_string());
             }
             _ => {}
         }
@@ -456,7 +527,8 @@ async fn download(
 
     match std::fs::read(&path) {
         Ok(bytes) => {
-            let content_disposition = format!("attachment; filename=\"{}\"", filename.replace('"', ""));
+            let content_disposition =
+                format!("attachment; filename=\"{}\"", filename.replace('"', ""));
             (
                 [
                     (header::CONTENT_TYPE, "application/octet-stream".to_string()),
@@ -591,7 +663,12 @@ mod tests {
     async fn health_returns_ok() {
         let state = WifixState::new("uploads");
         let response = app(state)
-            .oneshot(Request::builder().uri("/health").body(Body::empty()).unwrap())
+            .oneshot(
+                Request::builder()
+                    .uri("/health")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
             .await
             .unwrap();
 
@@ -601,6 +678,57 @@ mod tests {
         let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
         assert_eq!(json["ok"], true);
         assert_eq!(json["service"], "wifix-server");
+    }
+
+    #[tokio::test]
+    async fn index_returns_react_app_shell() {
+        let state = WifixState::new("uploads");
+        let response = app(state)
+            .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response
+                .headers()
+                .get(header::CONTENT_TYPE)
+                .unwrap()
+                .to_str()
+                .unwrap(),
+            "text/html; charset=utf-8"
+        );
+
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let html = String::from_utf8(body.to_vec()).unwrap();
+        assert!(html.contains("<title>WifiX</title>"));
+        assert!(html.contains(r#"<div id="root"></div>"#));
+        assert!(html.contains("/assets/"));
+    }
+
+    #[tokio::test]
+    async fn static_asset_returns_embedded_file() {
+        let state = WifixState::new("uploads");
+        let response = app(state)
+            .oneshot(
+                Request::builder()
+                    .uri("/wifix-logo.png")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response
+                .headers()
+                .get(header::CONTENT_TYPE)
+                .unwrap()
+                .to_str()
+                .unwrap(),
+            "image/png"
+        );
     }
 
     #[tokio::test]
@@ -672,17 +800,20 @@ mod tests {
 
     #[tokio::test]
     async fn files_returns_uploaded_file_metadata() {
-        let root = std::env::temp_dir().join(format!(
-            "wifix-server-files-test-{}",
-            std::process::id()
-        ));
+        let root =
+            std::env::temp_dir().join(format!("wifix-server-files-test-{}", std::process::id()));
         let _ = fs::remove_dir_all(&root);
         fs::create_dir_all(&root).unwrap();
         fs::write(root.join("demo.txt"), b"hello").unwrap();
 
         let state = WifixState::new(&root);
         let response = app(state)
-            .oneshot(Request::builder().uri("/files").body(Body::empty()).unwrap())
+            .oneshot(
+                Request::builder()
+                    .uri("/files")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
             .await
             .unwrap();
 
@@ -924,10 +1055,8 @@ mod tests {
 
     #[tokio::test]
     async fn download_returns_file_bytes() {
-        let root = std::env::temp_dir().join(format!(
-            "wifix-server-download-test-{}",
-            std::process::id()
-        ));
+        let root =
+            std::env::temp_dir().join(format!("wifix-server-download-test-{}", std::process::id()));
         let _ = fs::remove_dir_all(&root);
         fs::create_dir_all(&root).unwrap();
         fs::write(root.join("demo.txt"), b"hello").unwrap();
@@ -978,10 +1107,8 @@ mod tests {
 
     #[tokio::test]
     async fn upload_saves_file_and_returns_metadata() {
-        let root = std::env::temp_dir().join(format!(
-            "wifix-server-upload-test-{}",
-            std::process::id()
-        ));
+        let root =
+            std::env::temp_dir().join(format!("wifix-server-upload-test-{}", std::process::id()));
         let _ = fs::remove_dir_all(&root);
 
         let boundary = "wifix-test-boundary";
@@ -1151,10 +1278,8 @@ Content-Disposition: form-data; name=\"pin\"\r\n\
 
     #[tokio::test]
     async fn delete_removes_file_and_pin() {
-        let root = std::env::temp_dir().join(format!(
-            "wifix-server-delete-test-{}",
-            std::process::id()
-        ));
+        let root =
+            std::env::temp_dir().join(format!("wifix-server-delete-test-{}", std::process::id()));
         let _ = fs::remove_dir_all(&root);
         fs::create_dir_all(&root).unwrap();
         fs::write(root.join("demo.txt"), b"hello").unwrap();

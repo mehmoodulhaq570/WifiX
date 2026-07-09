@@ -11,6 +11,34 @@ export const isMobileTauri = () => {
   }
 };
 
+let httpOnlyBackendCache = null;
+
+export const isHttpOnlyBackend = async () => {
+  if (isMobileTauri()) {
+    return true;
+  }
+
+  if (httpOnlyBackendCache !== null) {
+    return httpOnlyBackendCache;
+  }
+
+  try {
+    const res = await fetch(`${getApiBase().replace(/\/$/, "")}/health`, {
+      credentials: "include",
+    });
+    if (!res.ok) {
+      httpOnlyBackendCache = false;
+      return false;
+    }
+    const data = await res.json().catch(() => ({}));
+    httpOnlyBackendCache = data.service === "wifix-server";
+    return httpOnlyBackendCache;
+  } catch (e) {
+    httpOnlyBackendCache = false;
+    return false;
+  }
+};
+
 export const getApiBase = () => {
   try {
     const pageHost = window.location.hostname;
