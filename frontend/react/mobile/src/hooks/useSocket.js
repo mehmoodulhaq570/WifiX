@@ -112,6 +112,10 @@ export const useSocket = (
   };
 
   const createSocket = async () => {
+    if (isMobileTauri()) {
+      return null;
+    }
+
     const { io } = await import("socket.io-client");
     const socket = io(getApiBase(), {
       autoConnect: false,
@@ -129,6 +133,10 @@ export const useSocket = (
 
   const initSocket = async () => {
     try {
+      if (isMobileTauri()) {
+        return null;
+      }
+
       const socket = socketRef.current || (await createSocket());
       await waitForConnect(socket);
       return socket;
@@ -242,6 +250,10 @@ export const useSocket = (
   };
 
   const setupSocketHandlers = (handlers) => {
+    if (isMobileTauri()) {
+      return;
+    }
+
     const socket = socketRef.current;
     if (!socket) {
       console.warn("Cannot setup handlers - socket is not initialized");

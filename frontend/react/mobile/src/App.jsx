@@ -141,9 +141,11 @@ function App() {
     if (info) {
       setDeviceInfo((d) => ({ ...d, ...info }));
     }
-    await initSocket();
+    if (isMobileTauri()) {
+      return;
+    }
 
-    // Setup socket event handlers
+    await initSocket();
     setupSocketHandlers(getConnectionHandlers());
   };
 
@@ -247,7 +249,9 @@ function App() {
     const result = await socketStartServer();
     if (result.success) {
       setIsHost(true);
-      setupSocketHandlers(getConnectionHandlers());
+      if (!isMobileTauri()) {
+        setupSocketHandlers(getConnectionHandlers());
+      }
       setDeviceInfo((d) => ({ ...d, ...backendInfo }));
       // Load existing files when becoming host
       await loadFiles();
@@ -269,6 +273,14 @@ function App() {
   };
 
   const handleConnectToHost = async () => {
+    if (isHost) {
+      const message =
+        "This device is already the host. Open the share link from another device or browser to connect as a client.";
+      setStatusMsg(message);
+      toast.error(message, { duration: 6000 });
+      return;
+    }
+
     setIsConnectingClient(true);
     setStatusMsg("Sending connection request to host...");
 
@@ -616,11 +628,13 @@ function App() {
 
   // Connection approval handlers
   const handleApproveConnection = async () => {
-    if (pendingRequest && socketRef.current) {
+    if (pendingRequest) {
+      if (socketRef.current) {
       socketRef.current.emit("approve_request", {
         id: pendingRequest.id,
         sid: pendingRequest.sid,
       });
+      }
       if (pendingRequest.id) {
         try {
           await respondToConnectionRequest(pendingRequest.id, "approved");
@@ -637,11 +651,13 @@ function App() {
   };
 
   const handleDenyConnection = async () => {
-    if (pendingRequest && socketRef.current) {
+    if (pendingRequest) {
+      if (socketRef.current) {
       socketRef.current.emit("deny_request", {
         id: pendingRequest.id,
         sid: pendingRequest.sid,
       });
+      }
       if (pendingRequest.id) {
         try {
           await respondToConnectionRequest(pendingRequest.id, "denied");
