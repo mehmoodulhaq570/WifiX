@@ -53,8 +53,8 @@ function App() {
   const [uploadError, setUploadError] = useState(null);
   const [showUploadError, setShowUploadError] = useState(false);
   const [showSetPinModal, setShowSetPinModal] = useState(false);
-  const [pendingFile, setPendingFile] = useState(null);
   const [pinProtectionEnabled, setPinProtectionEnabled] = useState(false);
+  const [selectedUploadPin, setSelectedUploadPin] = useState(null);
   const [selectedFileName, setSelectedFileName] = useState("");
   const [isConnectingClient, setIsConnectingClient] = useState(false);
   const [pendingClientRequestId, setPendingClientRequestId] = useState(null);
@@ -351,14 +351,14 @@ function App() {
       return;
     }
 
-    // If PIN protection is enabled, show modal for first file (apply same PIN to all)
-    if (pinProtectionEnabled) {
-      setPendingFile(files); // Store all files
+    // PIN setup prepares the upload; only this Upload button sends the files.
+    if (pinProtectionEnabled && !selectedUploadPin) {
       setShowSetPinModal(true);
-    } else {
-      // Upload all files directly without PIN
-      await uploadMultipleFiles(files, null);
+      setStatusMsg("Set a PIN, then click Upload again to start.");
+      return;
     }
+
+    await uploadMultipleFiles(files, pinProtectionEnabled ? selectedUploadPin : null);
   };
 
   // Perform the actual upload with progress and speed tracking
@@ -550,18 +550,22 @@ function App() {
     } else {
       setStatusMsg(`Uploaded ${successCount} file(s), ${failCount} failed`);
     }
+
+    setSelectedUploadPin(null);
   };
 
-  // Actual upload after PIN is set (or skipped)
+  // PIN confirmation only prepares the selected upload. It does not upload.
   const handleUploadWithPin = async (pin) => {
     setShowSetPinModal(false);
-    const files = pendingFile;
-    setPendingFile(null);
 
-    if (Array.isArray(files)) {
-      await uploadMultipleFiles(files, pin);
-    } else if (files) {
-      await performUpload(files, pin);
+    if (pin) {
+      setSelectedUploadPin(pin);
+      setStatusMsg("PIN set. Click Upload to send the selected file.");
+      toast.success("PIN set. Click Upload to start upload.");
+    } else {
+      setSelectedUploadPin(null);
+      setPinProtectionEnabled(false);
+      setStatusMsg("PIN skipped. Click Upload to send without PIN.");
     }
   };
 
@@ -729,14 +733,21 @@ function App() {
                 onFileSelect={(files) => {
                   // Files are already set in the ref by the component
                   console.log("Files selected:", files.length);
+                  setSelectedUploadPin(null);
                   if (files && files.length > 0) {
                     setSelectedFileName(files[0].name);
+                  } else {
+                    setSelectedFileName("");
                   }
                 }}
                 pinProtectionEnabled={pinProtectionEnabled}
-                onTogglePinProtection={() =>
-                  setPinProtectionEnabled(!pinProtectionEnabled)
-                }
+                onTogglePinProtection={() => {
+                  const nextEnabled = !pinProtectionEnabled;
+                  setPinProtectionEnabled(nextEnabled);
+                  if (!nextEnabled) {
+                    setSelectedUploadPin(null);
+                  }
+                }}
               />
             </div>
 
@@ -782,7 +793,6 @@ function App() {
           onConfirm={handleUploadWithPin}
           onCancel={() => {
             setShowSetPinModal(false);
-            setPendingFile(null);
           }}
         />
 

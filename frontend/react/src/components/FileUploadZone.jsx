@@ -54,6 +54,9 @@ const FileUploadZone = ({
       fileInputRef.current.value = "";
     }
     setSelectedFiles([]);
+    if (onFileSelect) {
+      onFileSelect([]);
+    }
     console.log("Files cleared");
   };
 
